@@ -49,5 +49,31 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Xbim.Common">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Xbim.Ifc">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.Ifc.dll</HintPath>
+    </Reference>
+    <Reference Include="Xbim.Ifc2x3">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.Ifc2x3.dll</HintPath>
+    </Reference>
+    <Reference Include="Xbim.Ifc4">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.Ifc4.dll</HintPath>
+    </Reference>
+    <Reference Include="Xbim.IO.Esent">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.IO.Esent.dll</HintPath>
+    </Reference>
+    <Reference Include="Xbim.IO.MemoryModel">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.IO.MemoryModel.dll</HintPath>
+    </Reference>
+    <Reference Include="Xbim.Tessellator">
+      <HintPath>..\Externals\Xbim.Essentials\5.x\Xbim.Tessellator.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="H.Pipes" Version="2.0.42" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
