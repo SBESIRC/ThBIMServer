@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.IO.Pipes;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Security.Principal;
 using System.Collections.Generic;
@@ -28,6 +29,10 @@ namespace ThBIMServer
             if (null == pipeServer)
                 pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In);
             pipeServer.WaitForConnection();
+
+            Console.WriteLine("管道连接完成，正在生成Ifc文件。");
+            var sw = new Stopwatch();
+            sw.Start();
             try
             {
                 thProject = new ThTCHProjectData();
@@ -41,9 +46,11 @@ namespace ThBIMServer
                     throw new Exception("无法识别的CAD-Push数据!");
                 }
             }
-            catch (IOException)
+            catch (IOException ioEx)
             {
                 thProject = null;
+                sw.Stop();
+                Console.WriteLine("无法识别的CAD-Push数据：{0}", ioEx.Message);
             }
             pipeServer.Dispose();
             if (null != thProject)
@@ -72,7 +79,11 @@ namespace ThBIMServer
 
                 thProject = null;
                 pipeServer = null;
+
+                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                sw.Stop();
             }
+            sw.Stop();
             PipeWorkFromCAD();
         }
 
