@@ -107,14 +107,14 @@ namespace ThBIMServer
                 }
                 else
                 {
-                    throw new Exception("无法识别的CAD-Push数据!");
+                    throw new Exception("无法识别的SU-Push数据!");
                 }
             }
             catch (IOException ioEx)
             {
                 suProject = null;
                 sw.Stop();
-                Console.WriteLine("无法识别的CAD-Push数据：{0}", ioEx.Message);
+                Console.WriteLine("无法识别的SU-Push数据：{0}", ioEx.Message);
             }
             SU_pipeServer.Dispose();
             if (null != suProject)
