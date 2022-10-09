@@ -71,7 +71,7 @@
     <Compile Include="Data\ThTCHWallData.cs" />
     <Compile Include="Data\ThTCHWindowData.cs" />
     <Compile Include="Geometry\ThNTSExtension.cs" />
-    <Compile Include="Geometry\ThNTSService.cs" />
+    <Compile Include="Geometry\ThNTSOperation.cs" />
     <Compile Include="Geometry\ThXbimCircle3D.cs" />
     <Compile Include="Geometry\ThXbimCommon.cs" />
     <Compile Include="Geometry\ThXbimCoordinateSystem3D.cs" />
