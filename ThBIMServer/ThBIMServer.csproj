@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -69,6 +70,8 @@
     <Compile Include="Data\ThTCHSlabData.cs" />
     <Compile Include="Data\ThTCHWallData.cs" />
     <Compile Include="Data\ThTCHWindowData.cs" />
+    <Compile Include="Geometry\ThNTSExtension.cs" />
+    <Compile Include="Geometry\ThNTSService.cs" />
     <Compile Include="Geometry\ThXbimCircle3D.cs" />
     <Compile Include="Geometry\ThXbimCommon.cs" />
     <Compile Include="Geometry\ThXbimCoordinateSystem3D.cs" />
@@ -84,6 +87,7 @@
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3MeshExtension.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFCSolid3dExtension.cs" />
     <Compile Include="Ifc2x3\ThXbimSlabEngine.cs" />
+    <Compile Include="PipeService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
