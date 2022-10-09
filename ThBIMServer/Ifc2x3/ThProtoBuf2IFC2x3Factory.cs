@@ -201,18 +201,8 @@ namespace ThMEPIFC.Ifc2x3
 
         private static IfcProductDefinitionShape CreateProductDefinitionShape(IfcStore model, IfcExtrudedAreaSolid solid)
         {
-            //Create a Definition shape to hold the geometry
-            var shape = model.Instances.New<IfcShapeRepresentation>();
-            var modelContext = model.Instances.OfType<IfcGeometricRepresentationContext>().FirstOrDefault();
-            shape.ContextOfItems = modelContext;
-            shape.RepresentationType = "SweptSolid";
-            shape.RepresentationIdentifier = "Body";
-            shape.Items.Add(solid);
-
-            //Create a Product Definition and add the model geometry to the wall
-            var rep = model.Instances.New<IfcProductDefinitionShape>();
-            rep.Representations.Add(shape);
-            return rep;
+            var shape = ThIFC2x3Factory.CreateSweptSolidBody(model, solid);
+            return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
         }
 
         static public void relContainWalls2Storey(IfcStore model, List<IfcWall> walls, IfcBuildingStorey Storey)
