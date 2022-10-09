@@ -93,6 +93,10 @@ namespace ThBIMServer
             if (null == SU_pipeServer)
                 SU_pipeServer = new NamedPipeServerStream("THSU2P3DPIPE", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
             SU_pipeServer.WaitForConnection();
+
+            Console.WriteLine("管道连接完成，正在生成Ifc文件。");
+            var sw = new Stopwatch();
+            sw.Start();
             try
             {
                 suProject = new ThSUProjectData();
@@ -106,9 +110,11 @@ namespace ThBIMServer
                     throw new Exception("无法识别的CAD-Push数据!");
                 }
             }
-            catch (IOException)
+            catch (IOException ioEx)
             {
                 suProject = null;
+                sw.Stop();
+                Console.WriteLine("无法识别的CAD-Push数据：{0}", ioEx.Message);
             }
             SU_pipeServer.Dispose();
             if (null != suProject)
@@ -137,7 +143,11 @@ namespace ThBIMServer
 
                 suProject = null;
                 SU_pipeServer = null;
+
+                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                sw.Stop();
             }
+            sw.Stop();
             PipeWorkFromSU();
         }
 
