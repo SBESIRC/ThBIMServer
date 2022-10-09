@@ -14,6 +14,7 @@ using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.RepresentationResource;
 using Xbim.Ifc2x3.GeometryResource;
 using ThMEPIFC.Geometry;
+using ThBIMServer.Geometry;
 
 namespace ThMEPIFC.Ifc2x3
 {
@@ -710,8 +711,8 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Name = "TH Railing";
                 //create representation
                 var centerline = railing.BuildElement.Outline;
-                //var outlines = centerline.Shell.ToPolyline().BufferFlatPL(railing.BuildElement.Width / 2.0);
-                var profile = model.ToIfcArbitraryClosedProfileDef(railing.BuildElement.Outline);
+                var outlines = centerline.Shell.BufferFlatPL(railing.BuildElement.Width / 2.0);
+                var profile = model.ToIfcArbitraryClosedProfileDef(outlines);
                 var solid = model.ToIfcExtrudedAreaSolid(profile, ZAxis, railing.BuildElement.Height);
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
