@@ -119,6 +119,10 @@ namespace ThBIMServer.Geometry
             {
                 return linearRing.ToTCHPolyline();
             }
+            else if (geometry is Polygon polygon)
+            {
+                return polygon.Shell.ToTCHPolyline();
+            }
             else
             {
                 return new ThTCHPolyline();
