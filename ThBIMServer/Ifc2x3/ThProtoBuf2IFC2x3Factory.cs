@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using Xbim.Ifc;
 using Xbim.Common;
@@ -8,6 +9,7 @@ using Xbim.Ifc2x3.Interfaces;
 using Xbim.Ifc2x3.ProfileResource;
 using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.MeasureResource;
+using Xbim.Ifc2x3.UtilityResource;
 using Xbim.Ifc2x3.PropertyResource;
 using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
@@ -28,7 +30,11 @@ namespace ThMEPIFC.Ifc2x3
             using (var txn = model.BeginTransaction("Initialize Model"))
             {
                 //there should always be one project in the model
-                var project = model.Instances.New<IfcProject>(p => p.Name = projectName);
+                var project = model.Instances.New<IfcProject>(p =>
+                {
+                    p.Name = projectName;
+                    p.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
                 //set the units to SI (mm and metres)
                 project.Initialize(ProjectUnits.SIUnitsUK);
                 //set GeometricRepresentationContext
@@ -56,6 +62,7 @@ namespace ThMEPIFC.Ifc2x3
                 var ret = model.Instances.New<IfcSite>(s =>
                 {
                     s.ObjectPlacement = model.ToIfcLocalPlacement();
+                    s.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
                 //get the project there should only be one and it should exist
                 var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
@@ -74,6 +81,7 @@ namespace ThMEPIFC.Ifc2x3
                     b.Name = building.Root.Name;
                     b.CompositionType = IfcElementCompositionEnum.ELEMENT;
                     b.ObjectPlacement = model.ToIfcLocalPlacement(site.ObjectPlacement);
+                    b.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
                 model.Instances.New<IfcRelDefinesByProperties>(rel =>
                 {
@@ -107,6 +115,7 @@ namespace ThMEPIFC.Ifc2x3
                     b.Name = buildingName;
                     b.CompositionType = IfcElementCompositionEnum.ELEMENT;
                     b.ObjectPlacement = model.ToIfcLocalPlacement(site.ObjectPlacement);
+                    b.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
                 model.Instances.New<IfcRelDefinesByProperties>(rel =>
                 {
@@ -131,7 +140,7 @@ namespace ThMEPIFC.Ifc2x3
             }
         }
 
-        static public IfcBuildingStorey CreateStorey(IfcStore model, IfcBuilding building, ThTCHBuildingStoreyData storey)
+        public static IfcBuildingStorey CreateStorey(IfcStore model, IfcBuilding building, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Storey"))
             {
@@ -140,6 +149,7 @@ namespace ThMEPIFC.Ifc2x3
                     s.Name = storey.Number;
                     s.ObjectPlacement = model.ToIfcLocalPlacement(building.ObjectPlacement);
                     s.Elevation = storey.Elevation;
+                    s.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
                 // setup aggregation relationship
                 var ifcRel = model.Instances.New<IfcRelAggregates>();
@@ -188,6 +198,7 @@ namespace ThMEPIFC.Ifc2x3
                 {
                     s.Name = storeyName;
                     s.ObjectPlacement = model.ToIfcLocalPlacement(building.ObjectPlacement);
+                    s.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
                 // setup aggregation relationship
                 var ifcRel = model.Instances.New<IfcRelAggregates>();
@@ -357,8 +368,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Wall"))
             {
-                var ret = model.Instances.New<IfcWall>();
-                ret.Name = "A Standard rectangular wall";
+                var ret = model.Instances.New<IfcWall>(d =>
+                {
+                    d.Name = "Wall";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = GetProfile(model, wall);
@@ -421,8 +435,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Door"))
             {
-                var ret = model.Instances.New<IfcDoor>();
-                ret.Name = "Door";
+                var ret = model.Instances.New<IfcDoor>(d =>
+                {
+                    d.Name = "Door";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = model.ToIfcRectangleProfileDef(door.BuildElement.Length, door.BuildElement.Width);
@@ -472,8 +489,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
-                var ret = model.Instances.New<IfcOpeningElement>();
-                ret.Name = "Door Hole";
+                var ret = model.Instances.New<IfcOpeningElement>(d =>
+                {
+                    d.Name = "Door Hole";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = GetProfile(model, wall, door);
@@ -493,8 +513,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
-                var ret = model.Instances.New<IfcOpeningElement>();
-                ret.Name = "Window Hole";
+                var ret = model.Instances.New<IfcOpeningElement>(d =>
+                {
+                    d.Name = "Window Hole";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = GetProfile(model, wall, window);
@@ -514,8 +537,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
-                var ret = model.Instances.New<IfcOpeningElement>();
-                ret.Name = "Generic Hole";
+                var ret = model.Instances.New<IfcOpeningElement>(d =>
+                {
+                    d.Name = "Generic Hole";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = GetProfile(model, hole);
@@ -571,8 +597,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Window"))
             {
-                var ret = model.Instances.New<IfcWindow>();
-                ret.Name = "Window";
+                var ret = model.Instances.New<IfcWindow>(d =>
+                {
+                    d.Name = "Window";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = model.ToIfcRectangleProfileDef(window.BuildElement.Length, window.BuildElement.Width);
@@ -655,8 +684,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Slab"))
             {
-                var ret = model.Instances.New<IfcSlab>();
-                ret.Name = "Slab";
+                var ret = model.Instances.New<IfcSlab>(d =>
+                {
+                    d.Name = "Slab";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var solids = slab.GetSlabSolid(slabxbimEngine);
@@ -697,8 +729,12 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Railing"))
             {
-                var ret = model.Instances.New<IfcRailing>();
-                ret.Name = "TH Railing";
+                var ret = model.Instances.New<IfcRailing>(d =>
+                {
+                    d.Name = "Railing";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
+
                 //create representation
                 var centerline = railing.BuildElement.Outline;
                 var outlines = centerline.Shell.BufferFlatPL(railing.BuildElement.Width / 2.0);
@@ -726,9 +762,12 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create Room"))
             {
-                var ret = model.Instances.New<IfcSpace>();
-                ret.Name = "Room";
-                ret.Description = space.BuildElement.Root.Name;
+                var ret = model.Instances.New<IfcSpace>(d =>
+                {
+                    d.Name = "Room";
+                    d.Description = space.BuildElement.Root.Name;
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 //create representation
                 var profile = model.ToIfcArbitraryProfileDefWithVoids(space.BuildElement.Outline);
@@ -747,8 +786,11 @@ namespace ThMEPIFC.Ifc2x3
         {
             using (var txn = model.BeginTransaction("Create SU Element"))
             {
-                var ret = model.Instances.New<IfcBuildingElementProxy>();
-                ret.Name = "SU Element";
+                var ret = model.Instances.New<IfcBuildingElementProxy>(d =>
+                {
+                    d.Name = "SU Element";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                });
 
                 IfcFaceBasedSurfaceModel mesh = model.ToIfcFaceBasedSurface(def);
                 var shape = ThIFC2x3Factory.CreateFaceBasedSurfaceBody(model, mesh);
