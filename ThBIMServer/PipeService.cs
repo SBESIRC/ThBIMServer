@@ -57,12 +57,16 @@ namespace ThBIMServer
             {
                 //bimDataController.AddProject(thProject, projectMatrix3D);
                 //thProject 生成IFC
-                var file = @"D:\test_cad.ifc";
+                //选择保存路径
+                var time = DateTime.Now.ToString("HHmmss");
+                var fileName = "模型数据" + time + ".ifc";
+                var ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
+
                 var Model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThCAD2IFCProject", thProject.Root.GlobalId);
                 if (Model != null)
                 {
                     ThProtoBuf2IFC2x3Builder.BuildIfcModel(Model, thProject);
-                    ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, file);
+                    ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, ifcFilePath);
                     Model.Dispose();
                 }
 
@@ -73,7 +77,7 @@ namespace ThBIMServer
                     TokenImpersonationLevel.Impersonation))
                 {
                     pipeClient.Connect(5000);
-                    var bytes = Encoding.UTF8.GetBytes(file);
+                    var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
                     pipeClient.Write(bytes, 0, bytes.Length);
                 }
 
@@ -81,6 +85,8 @@ namespace ThBIMServer
                 pipeServer = null;
 
                 Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
+                Console.WriteLine("");
                 sw.Stop();
             }
             sw.Stop();
@@ -121,12 +127,15 @@ namespace ThBIMServer
             {
                 //bimDataController.AddProject(thProject, projectMatrix3D);
                 //thProject 生成IFC
-                var file = @"D:\test_su.ifc";
+                var time = DateTime.Now.ToString("HHmmss");
+                var fileName = "模型数据" + time + ".ifc";
+                var ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
+
                 var Model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThSU2IFCProject", suProject.Root.GlobalId);
                 if (Model != null)
                 {
                     ThProtoBuf2IFC2x3Builder.BuildIfcModel(Model, suProject);
-                    ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, file);
+                    ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, ifcFilePath);
                     Model.Dispose();
                 }
 
@@ -137,7 +146,7 @@ namespace ThBIMServer
                     TokenImpersonationLevel.Impersonation))
                 {
                     pipeClient.Connect(5000);
-                    var bytes = Encoding.UTF8.GetBytes(file);
+                    var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
                     pipeClient.Write(bytes, 0, bytes.Length);
                 }
 
@@ -145,6 +154,7 @@ namespace ThBIMServer
                 SU_pipeServer = null;
 
                 Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
                 sw.Stop();
             }
             sw.Stop();

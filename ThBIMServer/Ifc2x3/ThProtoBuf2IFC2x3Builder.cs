@@ -74,14 +74,14 @@ namespace ThMEPIFC.Ifc2x3
                         var room = ThProtoBuf2IFC2x3Factory.CreateRoom(Model, thtchRoom, floor_origin);
                         rooms.Add(room);
                     }
-                    ThProtoBuf2IFC2x3Factory.relContainSlabs2Storey(Model, slabs, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainWalls2Storey(Model, walls, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainColumns2Storey(Model, columns, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainBeams2Storey(Model, beams, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainDoors2Storey(Model, doors, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainWindows2Storey(Model, windows, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainsRailings2Storey(Model, railings, storey);
-                    ThProtoBuf2IFC2x3Factory.relContainsRooms2Storey(Model, rooms, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainSlabs2Storey(Model, slabs, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainWalls2Storey(Model, walls, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainColumns2Storey(Model, columns, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainBeams2Storey(Model, beams, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainDoors2Storey(Model, doors, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainWindows2Storey(Model, windows, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainsRailings2Storey(Model, railings, storey);
+                    ThProtoBuf2IFC2x3Factory.RelContainsRooms2Storey(Model, rooms, storey);
                 }
             }
         }
@@ -103,7 +103,7 @@ namespace ThMEPIFC.Ifc2x3
                     var ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(Model, def, trans);
                     suElements.Add(ifcBuildingElement);
                 }
-                ThProtoBuf2IFC2x3Factory.relContainsSUElements2Storey(Model, suElements, storey);
+                ThProtoBuf2IFC2x3Factory.RelContainsSUElements2Storey(Model, suElements, storey);
             }
         }
 
