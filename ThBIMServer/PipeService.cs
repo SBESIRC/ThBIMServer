@@ -13,9 +13,7 @@ namespace ThBIMServer
 {
     public class PipeService
     {
-        private ThTCHProjectData thProject = null;
         private ThSUProjectData suProject = null;
-        NamedPipeServerStream pipeServer = null;
         NamedPipeServerStream SU_pipeServer = null;
 
         public void Work()
@@ -25,34 +23,31 @@ namespace ThBIMServer
 
         public void PipeWorkFromCAD()
         {
-            thProject = null;
-            pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In);
-            pipeServer.WaitForConnection();
+            // 获取管道数据
+            ThTCHProjectData thProject = null;
+            using (var pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In))
+            {
+                Console.WriteLine("等待管道连接...");
+                pipeServer.WaitForConnection();
+                Console.WriteLine("管道连接完成.");
 
-            Console.WriteLine("管道连接完成，正在生成Ifc文件。");
-
-            // 获取数据
-            try
-            {
-                thProject = new ThTCHProjectData();
-                byte[] PipeData = ReadPipeData(pipeServer);
-                if (VerifyPipeData(PipeData))
+                try
                 {
-                    Google.Protobuf.MessageExtensions.MergeFrom(thProject, PipeData.Skip(10).ToArray());
+                    thProject = new ThTCHProjectData();
+                    byte[] PipeData = ReadPipeData(pipeServer);
+                    if (VerifyPipeData(PipeData))
+                    {
+                        Google.Protobuf.MessageExtensions.MergeFrom(thProject, PipeData.Skip(10).ToArray());
+                    }
+                    else
+                    {
+                        throw new Exception("无法识别的CAD-Push数据!");
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    throw new Exception("无法识别的CAD-Push数据!");
+                    Console.WriteLine("无法获取管道数据：{0}", e.Message);
                 }
-            }
-            catch (Exception e)
-            {
-                thProject = null;
-                Console.WriteLine("无法识别的CAD-Push数据：{0}", e.Message);
-            }
-            finally
-            {
-                pipeServer.Dispose();
             }
 
             //选择保存路径
@@ -65,28 +60,36 @@ namespace ThBIMServer
             {
                 var sw = new Stopwatch();
                 sw.Start();
-                var Model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThCAD2IFCProject", thProject.Root.GlobalId);
-                if (Model != null)
+                try
                 {
-                    ThProtoBuf2IFC2x3Builder.BuildIfcModel(Model, thProject);
-                    ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, ifcFilePath);
-                    Model.Dispose();
-                }
-                sw.Stop();
+                    var model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThCAD2IFCProject", thProject.Root.GlobalId);
+                    if (model != null)
+                    {
+                        ThProtoBuf2IFC2x3Builder.BuildIfcModel(model, thProject);
+                        ThProtoBuf2IFC2x3Builder.SaveIfcModel(model, ifcFilePath);
+                        model.Dispose();
+                    }
 
-                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
-                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
-                Console.WriteLine("");
+                    sw.Stop();
+                    Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                    Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
+                    Console.WriteLine("");
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("无法保存数据：{0}", e.Message);
+                }
+                finally
+                {
+                    sw.Stop();
+                }
             }
 
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
                 using (var pipeClient = new NamedPipeClientStream(".",
-                    "THCAD2IFC2P3DPIPE",
-                    PipeDirection.Out,
-                    PipeOptions.None,
-                    TokenImpersonationLevel.Impersonation))
+                    "THCAD2IFC2P3DPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     pipeClient.Connect(5000);
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
@@ -94,6 +97,7 @@ namespace ThBIMServer
                 }
             }
 
+            // 下一次连接
             PipeWorkFromCAD();
         }
 
