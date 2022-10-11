@@ -26,13 +26,12 @@ namespace ThBIMServer
         public void PipeWorkFromCAD()
         {
             thProject = null;
-            if (null == pipeServer)
-                pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In);
+            pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In);
             pipeServer.WaitForConnection();
 
             Console.WriteLine("管道连接完成，正在生成Ifc文件。");
-            var sw = new Stopwatch();
-            sw.Start();
+
+            // 获取数据
             try
             {
                 thProject = new ThTCHProjectData();
@@ -46,22 +45,26 @@ namespace ThBIMServer
                     throw new Exception("无法识别的CAD-Push数据!");
                 }
             }
-            catch (IOException ioEx)
+            catch (Exception e)
             {
                 thProject = null;
-                sw.Stop();
-                Console.WriteLine("无法识别的CAD-Push数据：{0}", ioEx.Message);
+                Console.WriteLine("无法识别的CAD-Push数据：{0}", e.Message);
             }
-            pipeServer.Dispose();
+            finally
+            {
+                pipeServer.Dispose();
+            }
+
+            //选择保存路径
+            var time = DateTime.Now.ToString("HHmmss");
+            var fileName = "模型数据" + time + ".ifc";
+            var ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
+
+            // 保存数据
             if (null != thProject)
             {
-                //bimDataController.AddProject(thProject, projectMatrix3D);
-                //thProject 生成IFC
-                //选择保存路径
-                var time = DateTime.Now.ToString("HHmmss");
-                var fileName = "模型数据" + time + ".ifc";
-                var ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
-
+                var sw = new Stopwatch();
+                sw.Start();
                 var Model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThCAD2IFCProject", thProject.Root.GlobalId);
                 if (Model != null)
                 {
@@ -69,7 +72,16 @@ namespace ThBIMServer
                     ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, ifcFilePath);
                     Model.Dispose();
                 }
+                sw.Stop();
 
+                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
+                Console.WriteLine("");
+            }
+
+            // 发送文件
+            if (File.Exists(ifcFilePath))
+            {
                 using (var pipeClient = new NamedPipeClientStream(".",
                     "THCAD2IFC2P3DPIPE",
                     PipeDirection.Out,
@@ -80,29 +92,19 @@ namespace ThBIMServer
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
                     pipeClient.Write(bytes, 0, bytes.Length);
                 }
-
-                thProject = null;
-                pipeServer = null;
-
-                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
-                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
-                Console.WriteLine("");
-                sw.Stop();
             }
-            sw.Stop();
+
             PipeWorkFromCAD();
         }
 
         public void PipeWorkFromSU()
         {
             suProject = null;
-            if (null == SU_pipeServer)
-                SU_pipeServer = new NamedPipeServerStream("THSU2P3DPIPE", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
+            SU_pipeServer = new NamedPipeServerStream("THSU2P3DPIPE", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
             SU_pipeServer.WaitForConnection();
 
             Console.WriteLine("管道连接完成，正在生成Ifc文件。");
-            var sw = new Stopwatch();
-            sw.Start();
+
             try
             {
                 suProject = new ThSUProjectData();
@@ -116,21 +118,26 @@ namespace ThBIMServer
                     throw new Exception("无法识别的SU-Push数据!");
                 }
             }
-            catch (IOException ioEx)
+            catch (Exception e)
             {
                 suProject = null;
-                sw.Stop();
-                Console.WriteLine("无法识别的SU-Push数据：{0}", ioEx.Message);
+                Console.WriteLine("无法识别的SU-Push数据：{0}", e.Message);
             }
-            SU_pipeServer.Dispose();
+            finally
+            {
+                SU_pipeServer.Dispose();
+            }
+
+            // 选择保存路径
+            var time = DateTime.Now.ToString("HHmmss");
+            var fileName = "模型数据" + time + ".ifc";
+            var ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
+
+            // 保存数据
             if (null != suProject)
             {
-                //bimDataController.AddProject(thProject, projectMatrix3D);
-                //thProject 生成IFC
-                var time = DateTime.Now.ToString("HHmmss");
-                var fileName = "模型数据" + time + ".ifc";
-                var ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
-
+                var sw = new Stopwatch();
+                sw.Start();
                 var Model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThSU2IFCProject", suProject.Root.GlobalId);
                 if (Model != null)
                 {
@@ -138,7 +145,16 @@ namespace ThBIMServer
                     ThProtoBuf2IFC2x3Builder.SaveIfcModel(Model, ifcFilePath);
                     Model.Dispose();
                 }
+                sw.Stop();
 
+                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
+                Console.WriteLine("");
+            }
+
+            // 发送文件
+            if (File.Exists(ifcFilePath))
+            {
                 using (var pipeClient = new NamedPipeClientStream(".",
                     "THCAD2IFC2P3DPIPE",
                     PipeDirection.Out,
@@ -149,15 +165,8 @@ namespace ThBIMServer
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
                     pipeClient.Write(bytes, 0, bytes.Length);
                 }
-
-                suProject = null;
-                SU_pipeServer = null;
-
-                Console.WriteLine("成功生成Ifc文件，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
-                Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
-                sw.Stop();
             }
-            sw.Stop();
+
             PipeWorkFromSU();
         }
 
