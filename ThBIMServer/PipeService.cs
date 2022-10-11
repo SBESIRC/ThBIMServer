@@ -13,9 +13,6 @@ namespace ThBIMServer
 {
     public class PipeService
     {
-        private ThSUProjectData suProject = null;
-        NamedPipeServerStream SU_pipeServer = null;
-
         public void Work()
         {
             Parallel.Invoke(() => PipeWorkFromCAD(), () => PipeWorkFromSU());
@@ -27,9 +24,9 @@ namespace ThBIMServer
             ThTCHProjectData thProject = null;
             using (var pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In))
             {
-                Console.WriteLine("等待管道连接...");
+                Console.WriteLine("等待CAD管道连接...");
                 pipeServer.WaitForConnection();
-                Console.WriteLine("管道连接完成.");
+                Console.WriteLine("CAD管道连接完成.");
 
                 try
                 {
@@ -75,7 +72,7 @@ namespace ThBIMServer
                     Console.WriteLine("IFC文件路径：[{0}]", ifcFilePath);
                     Console.WriteLine("");
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine("无法保存数据：{0}", e.Message);
                 }
@@ -103,33 +100,31 @@ namespace ThBIMServer
 
         public void PipeWorkFromSU()
         {
-            suProject = null;
-            SU_pipeServer = new NamedPipeServerStream("THSU2P3DPIPE", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-            SU_pipeServer.WaitForConnection();
+            ThSUProjectData suProject = null;
+            using (var suPipeServer = new NamedPipeServerStream("THSU2P3DPIPE", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous))
+            {
+                Console.WriteLine("等待SU管道连接...");
+                suPipeServer.WaitForConnection();
+                Console.WriteLine("SU管道连接完成.");
 
-            Console.WriteLine("管道连接完成，正在生成Ifc文件。");
-
-            try
-            {
-                suProject = new ThSUProjectData();
-                byte[] PipeData = ReadPipeData(SU_pipeServer);
-                if (VerifyPipeData(PipeData))
+                try
                 {
-                    Google.Protobuf.MessageExtensions.MergeFrom(suProject, PipeData.Skip(10).ToArray());
+                    suProject = new ThSUProjectData();
+                    byte[] PipeData = ReadPipeData(suPipeServer);
+                    if (VerifyPipeData(PipeData))
+                    {
+                        Google.Protobuf.MessageExtensions.MergeFrom(suProject, PipeData.Skip(10).ToArray());
+                    }
+                    else
+                    {
+                        throw new Exception("无法识别的SU-Push数据!");
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    throw new Exception("无法识别的SU-Push数据!");
+                    suProject = null;
+                    Console.WriteLine("无法识别的SU-Push数据：{0}", e.Message);
                 }
-            }
-            catch (Exception e)
-            {
-                suProject = null;
-                Console.WriteLine("无法识别的SU-Push数据：{0}", e.Message);
-            }
-            finally
-            {
-                SU_pipeServer.Dispose();
             }
 
             // 选择保存路径
@@ -179,7 +174,7 @@ namespace ThBIMServer
         /// </summary>
         private byte[] ReadPipeData(NamedPipeServerStream stream)
         {
-            List<byte> _current = new List<byte>();
+            var _current = new List<byte>();
             while (true)
             {
                 var i = stream.ReadByte();
