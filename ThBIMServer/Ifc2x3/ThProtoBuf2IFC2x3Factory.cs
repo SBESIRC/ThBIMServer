@@ -792,7 +792,7 @@ namespace ThMEPIFC.Ifc2x3
                     d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
 
-                IfcFaceBasedSurfaceModel mesh = model.ToIfcFaceBasedSurface(def);
+                IfcFacetedBrep mesh = model.ToIfcFaceBasedSurface(def);
                 var shape = ThIFC2x3Factory.CreateFaceBasedSurfaceBody(model, mesh);
                 ret.Representation = ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
 

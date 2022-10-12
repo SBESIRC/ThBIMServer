@@ -174,16 +174,20 @@ namespace ThBIMServer
         /// </summary>
         private byte[] ReadPipeData(NamedPipeServerStream stream)
         {
-            var _current = new List<byte>();
+            List<byte> result = new List<byte>();
             while (true)
             {
-                var i = stream.ReadByte();
-                if (i == -1)
+                byte[] bytes = new byte[256];
+                var length = stream.Read(bytes, 0, bytes.Length);
+                if (length == 256)
+                    result.AddRange(bytes);
+                else
                 {
-                    return _current.ToArray();
+                    result.AddRange(bytes.Take(length));
+                    break;
                 }
-                _current.Add(Convert.ToByte(i));
             }
+            return result.ToArray();
         }
 
         /// <summary>
