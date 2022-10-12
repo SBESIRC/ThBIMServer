@@ -61,7 +61,10 @@
     <Compile Include="Data\ThTCHDescendingData.cs" />
     <Compile Include="Data\ThTCHDoorData.cs" />
     <Compile Include="Data\ThTCHGeometry.cs" />
+    <Compile Include="Data\ThTCHGridAxisData.cs" />
+    <Compile Include="Data\ThTCHGridData.cs" />
     <Compile Include="Data\ThTCHOpeningData.cs" />
+    <Compile Include="Data\ThTCHPositioningElementData.cs" />
     <Compile Include="Data\ThTCHProjectData.cs" />
     <Compile Include="Data\ThTCHProperty.cs" />
     <Compile Include="Data\ThTCHRailingData.cs" />
