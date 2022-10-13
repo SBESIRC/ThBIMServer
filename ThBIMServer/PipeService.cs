@@ -15,38 +15,42 @@ namespace ThBIMServer
     {
         public void Work()
         {
+            Console.WriteLine("开启双通道监听...");
             Parallel.Invoke(() => PipeWorkFromCAD(), () => PipeWorkFromSU());
         }
 
         public void PipeWorkFromCAD()
         {
             // 获取管道数据
-            ThTCHProjectData thProject = null;
-            using (var pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In))
-            {
-                Console.WriteLine("等待CAD管道连接...");
-                pipeServer.WaitForConnection();
-                Console.WriteLine("CAD管道连接完成.");
+            var thProject = PipeConnect();
 
-                try
-                {
-                    thProject = new ThTCHProjectData();
-                    byte[] PipeData = ReadPipeData(pipeServer);
-                    if (VerifyPipeData(PipeData))
-                    {
-                        Google.Protobuf.MessageExtensions.MergeFrom(thProject, PipeData.Skip(10).ToArray());
-                    }
-                    else
-                    {
-                        throw new Exception("无法识别的CAD-Push数据!");
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("无法获取管道数据：{0}", e.Message);
-                }
+            if (null == thProject)
+            {
+                return;
             }
 
+            Console.WriteLine("请选择ifc文件传输方式：1-文件模式 2-字节流模式");
+            var option = Console.ReadLine();
+            if (option == "1")
+            {
+                PipeWorkFromCADByFile(thProject);
+            }
+            else if (option == "2")
+            {
+                PipeWorkFromCADByStream(thProject);
+            }
+            else
+            {
+                Console.WriteLine("无效输入！");
+            }
+            Console.WriteLine("***************** CAD 通道已关闭 *******************");
+            Console.WriteLine();
+            Console.WriteLine();
+            PipeWorkFromCAD();
+        }
+
+        public void PipeWorkFromCADByFile(ThTCHProjectData thProject)
+        {
             //选择保存路径
             var time = DateTime.Now.ToString("HHmmss");
             var fileName = "模型数据" + time + ".ifc";
@@ -85,17 +89,89 @@ namespace ThBIMServer
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
-                using (var pipeClient = new NamedPipeClientStream(".",
-                    "THCAD2IFC2P3DPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                using (var pipeClient = new NamedPipeClientStream(".", "THFILEPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
+                    var sw = new Stopwatch();
+                    sw.Start();
+
                     pipeClient.Connect(5000);
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
                     pipeClient.Write(bytes, 0, bytes.Length);
+
+                    sw.Stop();
+                    Console.WriteLine("传输Ifc字节流，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                    Console.WriteLine("");
+                }
+            }
+        }
+
+        public void PipeWorkFromCADByStream(ThTCHProjectData thProject)
+        {
+            if (null != thProject)
+            {
+                var sw = new Stopwatch();
+                sw.Start();
+                try
+                {
+                    var model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThCAD2IFCProject", thProject.Root.GlobalId);
+                    if (model != null)
+                    {
+                        ThProtoBuf2IFC2x3Builder.BuildIfcModel(model, thProject);
+
+                        sw.Stop();
+                        Console.WriteLine("成功生成Ifc模型，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                        Console.WriteLine("");
+
+                        using (var pipeClient = new NamedPipeClientStream(".",
+                            "THCAD2IFC2P3DPIPE",
+                            PipeDirection.Out,
+                            PipeOptions.None,
+                            TokenImpersonationLevel.Impersonation))
+                        {
+                            sw.Restart();
+                            pipeClient.Connect(5000);
+                            ThProtoBuf2IFC2x3Builder.SaveIfcModelByStream(model, pipeClient);
+                            sw.Stop();
+                            Console.WriteLine("传输Ifc字节流，耗时 {0} 毫秒。", sw.ElapsedMilliseconds);
+                            Console.WriteLine("");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    sw.Stop();
+                    Console.WriteLine("无法保存数据：{0}", e.Message);
+                }
+            }
+        }
+
+        public ThTCHProjectData PipeConnect()
+        {
+            ThTCHProjectData thProject = null;
+            using (var pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In))
+            {
+                pipeServer.WaitForConnection();
+                Console.WriteLine("***************** CAD 通道已开启 *******************");
+                try
+                {
+                    thProject = new ThTCHProjectData();
+                    byte[] PipeData = ReadPipeData(pipeServer);
+                    if (VerifyPipeData(PipeData))
+                    {
+                        Google.Protobuf.MessageExtensions.MergeFrom(thProject, PipeData.Skip(10).ToArray());
+                    }
+                    else
+                    {
+                        throw new Exception("无法识别的CAD-Push数据!");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("无法获取管道数据：{0}", e.Message);
                 }
             }
 
-            // 下一次连接
-            PipeWorkFromCAD();
+            return thProject;
         }
 
         public void PipeWorkFromSU()
@@ -103,9 +179,8 @@ namespace ThBIMServer
             ThSUProjectData suProject = null;
             using (var suPipeServer = new NamedPipeServerStream("THSU2P3DPIPE", PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous))
             {
-                Console.WriteLine("等待SU管道连接...");
                 suPipeServer.WaitForConnection();
-                Console.WriteLine("SU管道连接完成.");
+                Console.WriteLine("***************** SU 通道已开启 *******************");
 
                 try
                 {
@@ -154,17 +229,17 @@ namespace ThBIMServer
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
-                using (var pipeClient = new NamedPipeClientStream(".",
-                    "THCAD2IFC2P3DPIPE",
-                    PipeDirection.Out,
-                    PipeOptions.None,
-                    TokenImpersonationLevel.Impersonation))
+                using (var pipeClient = new NamedPipeClientStream(".", "THCAD2IFC2P3DPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     pipeClient.Connect(5000);
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
                     pipeClient.Write(bytes, 0, bytes.Length);
                 }
             }
+
+            Console.WriteLine("***************** SU 通道已关闭 *******************");
+            Console.WriteLine();
+            Console.WriteLine();
 
             PipeWorkFromSU();
         }
