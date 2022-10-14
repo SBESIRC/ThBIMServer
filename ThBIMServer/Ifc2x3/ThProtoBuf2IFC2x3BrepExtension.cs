@@ -1,4 +1,5 @@
 ﻿using Xbim.Ifc;
+using System.Linq;
 using Xbim.Common.Geometry;
 using System.Collections.Generic;
 using Xbim.Ifc2x3.GeometryResource;
@@ -52,6 +53,56 @@ namespace ThMEPIFC.Ifc2x3
             NewBrep.Outer = ifcClosedShell;
 
             return NewBrep;
+        }
+
+        public static IfcFacetedBrep ToIfcFaceBasedSurface(this IfcStore model, ThSUCompDefinitionData def)
+        {
+            var NewBrep = model.Instances.New<IfcFacetedBrep>();
+            var ifcClosedShell = model.Instances.New<IfcClosedShell>();
+            foreach (var face in def.Faces)
+            {
+                var ifcface = model.Instances.New<IfcFace>();
+                ifcface.Bounds.Add(model.ToIfcFaceOuterBound(face.OuterLoop.Points.ToList()));
+                var innerBounds = face.InnerLoops;
+                if (innerBounds != null && innerBounds.Count > 0)
+                {
+                    foreach (var innerBound in innerBounds)
+                    {
+                        ifcface.Bounds.Add(model.ToIfcFaceBound(innerBound.Points.ToList()));
+                    }
+                }
+
+                ifcClosedShell.CfsFaces.Add(ifcface);
+            }
+            NewBrep.Outer = ifcClosedShell;
+
+            return NewBrep;
+        }
+
+        private static IfcFaceOuterBound ToIfcFaceOuterBound(this IfcStore model, List<ThTCHPoint3d> vertices)
+        {
+            return model.Instances.New<IfcFaceOuterBound>(b =>
+            {
+                b.Bound = model.ToIfcPolyLoop(vertices);
+            });
+        }
+
+        private static IfcFaceBound ToIfcFaceBound(this IfcStore model, List<ThTCHPoint3d> vertices)
+        {
+            return model.Instances.New<IfcFaceBound>(b =>
+            {
+                b.Bound = model.ToIfcPolyLoop(vertices);
+            });
+        }
+
+        private static IfcPolyLoop ToIfcPolyLoop(this IfcStore model, List<ThTCHPoint3d> vertices)
+        {
+            var polyLoop = model.Instances.New<IfcPolyLoop>();
+            foreach (ThTCHPoint3d v in vertices)
+            {
+                polyLoop.Polygon.Add(model.ToIfcCartesianPoint(v));
+            }
+            return polyLoop;
         }
     }
 }

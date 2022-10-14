@@ -87,9 +87,9 @@
     <Compile Include="Ifc2x3\ThIFC2x3Factory.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3BrepExtension.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3Builder.cs" />
+    <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3CurveExtension.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3Factory.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3GeExtension.cs" />
-    <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3MeshExtension.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3ProfileExtension.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFC2x3RelDefinesFactory.cs" />
     <Compile Include="Ifc2x3\ThProtoBuf2IFCSolid3dExtension.cs" />
