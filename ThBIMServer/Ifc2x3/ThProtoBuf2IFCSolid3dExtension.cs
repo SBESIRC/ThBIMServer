@@ -2,6 +2,7 @@
 using Xbim.Common.Geometry;
 using System.Collections.Generic;
 using Xbim.Ifc2x3.ProfileResource;
+using ThBIMServer.Ifc2x3;
 
 namespace ThMEPIFC.Ifc2x3
 {
