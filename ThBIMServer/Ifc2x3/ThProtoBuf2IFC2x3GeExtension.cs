@@ -120,38 +120,6 @@ namespace ThMEPIFC.Ifc2x3
             });
         }
 
-        public static IfcArbitraryProfileDefWithVoids ToIfcArbitraryProfileDefWithVoids(this IfcStore model, ThTCHMPolygon e)
-        {
-            return model.Instances.New<IfcArbitraryProfileDefWithVoids>(d =>
-            {
-                d.ProfileType = IfcProfileTypeEnum.AREA;
-                d.OuterCurve = model.ToIfcCompositeCurve(e.Shell);
-                foreach (var hole in e.Holes)
-                {
-                    var innerCurve = model.ToIfcCompositeCurve(hole);
-                    d.InnerCurves.Add(innerCurve);
-                }
-            });
-        }
-
-        public static IfcArbitraryClosedProfileDef ToIfcArbitraryClosedProfileDef(this IfcStore model, ThTCHMPolygon e)
-        {
-            return model.Instances.New<IfcArbitraryClosedProfileDef>(d =>
-            {
-                d.ProfileType = IfcProfileTypeEnum.AREA;
-                d.OuterCurve = model.ToIfcCompositeCurve(e.Shell);
-            });
-        }
-
-        public static IfcArbitraryClosedProfileDef ToIfcArbitraryClosedProfileDef(this IfcStore model, ThTCHPolyline e)
-        {
-            return model.Instances.New<IfcArbitraryClosedProfileDef>(d =>
-            {
-                d.ProfileType = IfcProfileTypeEnum.AREA;
-                d.OuterCurve = model.ToIfcCompositeCurve(e);
-            });
-        }
-
         private static IfcPolyline ToIfcPolyline(this IfcStore model, ThTCHPoint3d startPt, ThTCHPoint3d endPt)
         {
             var poly = model.Instances.New<IfcPolyline>();
@@ -207,17 +175,6 @@ namespace ThMEPIFC.Ifc2x3
                 }
             }
             return compositeCurve;
-        }
-
-        public static IfcRectangleProfileDef ToIfcRectangleProfileDef(this IfcStore model, double xDim, double yDim)
-        {
-            return model.Instances.New<IfcRectangleProfileDef>(d =>
-            {
-                d.XDim = xDim;
-                d.YDim = yDim;
-                d.ProfileType = IfcProfileTypeEnum.AREA;
-                d.Position = model.ToIfcAxis2Placement2D(XbimPoint3D.Zero);
-            });
         }
     }
 }

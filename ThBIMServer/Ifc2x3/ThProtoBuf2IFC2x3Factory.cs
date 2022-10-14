@@ -17,6 +17,7 @@ using Xbim.Ifc2x3.RepresentationResource;
 using Xbim.Ifc2x3.GeometryResource;
 using ThMEPIFC.Geometry;
 using ThBIMServer.Geometry;
+using ThBIMServer.Ifc2x3;
 
 namespace ThMEPIFC.Ifc2x3
 {
