@@ -6,6 +6,7 @@ using Xbim.IO;
 using Xbim.Ifc;
 using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.SharedBldgElements;
+using ThBIMServer.Ifc2x3;
 
 namespace ThMEPIFC.Ifc2x3
 {
@@ -75,6 +76,8 @@ namespace ThMEPIFC.Ifc2x3
                         var room = ThProtoBuf2IFC2x3Factory.CreateRoom(model, thtchRoom, floor_origin);
                         rooms.Add(room);
                     }
+
+                    // IIfcRelContainedInSpatialStructure 关系
                     ThProtoBuf2IFC2x3Factory.RelContainSlabs2Storey(model, slabs, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainWalls2Storey(model, walls, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainColumns2Storey(model, columns, storey);
@@ -83,6 +86,9 @@ namespace ThMEPIFC.Ifc2x3
                     ThProtoBuf2IFC2x3Factory.RelContainWindows2Storey(model, windows, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainsRailings2Storey(model, railings, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainsRooms2Storey(model, rooms, storey);
+
+                    // IfcRelDefinesByType 关系
+                    ThProtoBuf2IFC2x3RelDefinesFactory.RelDefinesByType2Wall(model, walls);
                 }
             }
         }
