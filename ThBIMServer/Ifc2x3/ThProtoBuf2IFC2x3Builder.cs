@@ -102,7 +102,7 @@ namespace ThMEPIFC.Ifc2x3
                 var building = ThProtoBuf2IFC2x3Factory.CreateBuilding(model, site, project.Root.Name + "Building");
                 var storey = ThProtoBuf2IFC2x3Factory.CreateStorey(model, building, "1F");
                 var definitions = project.Definitions;
-                var suElements = new List<IfcBuildingElementProxy>();
+                var suElements = new List<IfcBuildingElement>();
                 foreach (var element in project.Buildings)
                 {
                     var def = definitions[element.Component.DefinitionIndex];

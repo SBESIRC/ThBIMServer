@@ -229,7 +229,7 @@ namespace ThBIMServer
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
-                using (var pipeClient = new NamedPipeClientStream(".", "THCAD2IFC2P3DPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                using (var pipeClient = new NamedPipeClientStream(".", "THFILEPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     pipeClient.Connect(5000);
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);

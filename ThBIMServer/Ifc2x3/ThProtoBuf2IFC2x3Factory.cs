@@ -349,7 +349,7 @@ namespace ThMEPIFC.Ifc2x3
             }
         }
 
-        public static void RelContainsSUElements2Storey(IfcStore model, List<IfcBuildingElementProxy> elements, IfcBuildingStorey storey)
+        public static void RelContainsSUElements2Storey(IfcStore model, List<IfcBuildingElement> elements, IfcBuildingStorey storey)
         {
             using (var txn = model.BeginTransaction("relContainsSUElements2Storey"))
             {
@@ -783,15 +783,51 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region SU Element
-        public static IfcBuildingElementProxy CreatedSUElement(IfcStore model, ThSUCompDefinitionData def, ThTCHMatrix3d trans)
+        public static IfcBuildingElement CreatedSUElement(IfcStore model, ThSUCompDefinitionData def, ThTCHMatrix3d trans)
         {
+            IfcBuildingElement ret;
             using (var txn = model.BeginTransaction("Create SU Element"))
             {
-                var ret = model.Instances.New<IfcBuildingElementProxy>(d =>
+                if (def.IfcClassification == "IfcWall")
                 {
-                    d.Name = "SU Element";
-                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
-                });
+                    ret = model.Instances.New<IfcWall>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else if (def.IfcClassification == "IfcBeam")
+                {
+                    ret = model.Instances.New<IfcBeam>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else if (def.IfcClassification == "IfcColumn")
+                {
+                    ret = model.Instances.New<IfcColumn>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else if (def.IfcClassification == "IfcSlab")
+                {
+                    ret = model.Instances.New<IfcSlab>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else
+                {
+                    ret = model.Instances.New<IfcBuildingElementProxy>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
 
                 IfcFacetedBrep mesh = model.ToIfcFaceBasedSurface(def);
                 var shape = ThIFC2x3Factory.CreateFaceBasedSurfaceBody(model, mesh);
