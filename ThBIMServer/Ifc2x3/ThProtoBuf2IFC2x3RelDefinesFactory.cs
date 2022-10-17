@@ -8,7 +8,7 @@ namespace ThBIMServer.Ifc2x3
     {
         public static void RelDefinesByType2Wall(IfcStore model, List<IfcWall> walls)
         {
-            using (var txn = model.BeginTransaction("relContainsRooms2Storey"))
+            using (var txn = model.BeginTransaction())
             {
                 var type = model.Instances.New<IfcWallType>(t =>
                 {
