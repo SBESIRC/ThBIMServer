@@ -89,7 +89,7 @@ namespace ThBIMServer
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
-                using (var pipeClient = new NamedPipeClientStream(".", "THFILEPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                using (var pipeClient = new NamedPipeClientStream(".", "THIFCFILE2P3DPIE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     var sw = new Stopwatch();
                     sw.Start();
@@ -123,7 +123,7 @@ namespace ThBIMServer
                         Console.WriteLine("");
 
                         using (var pipeClient = new NamedPipeClientStream(".",
-                            "THCAD2IFC2P3DPIPE",
+                            "THIFCSTREAM2P3DIPE",
                             PipeDirection.Out,
                             PipeOptions.None,
                             TokenImpersonationLevel.Impersonation))
@@ -148,7 +148,7 @@ namespace ThBIMServer
         public ThTCHProjectData PipeConnect()
         {
             ThTCHProjectData thProject = null;
-            using (var pipeServer = new NamedPipeServerStream("THCAD2P3DPIPE", PipeDirection.In))
+            using (var pipeServer = new NamedPipeServerStream("THCAD2SERVERPIPE", PipeDirection.In))
             {
                 pipeServer.WaitForConnection();
                 Console.WriteLine("***************** CAD 通道已开启 *******************");
@@ -229,7 +229,7 @@ namespace ThBIMServer
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
-                using (var pipeClient = new NamedPipeClientStream(".", "THFILEPIPE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                using (var pipeClient = new NamedPipeClientStream(".", "THIFCFILE2P3DPIE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     pipeClient.Connect(5000);
                     var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
