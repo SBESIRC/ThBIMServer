@@ -788,7 +788,7 @@ namespace ThMEPIFC.Ifc2x3
             IfcBuildingElement ret;
             using (var txn = model.BeginTransaction("Create SU Element"))
             {
-                if (def.IfcClassification == "IfcWall")
+                if (def.IfcClassification.StartsWith("IfcWall"))
                 {
                     ret = model.Instances.New<IfcWall>(d =>
                     {
@@ -796,7 +796,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification == "IfcBeam")
+                else if (def.IfcClassification.StartsWith("IfcBeam"))
                 {
                     ret = model.Instances.New<IfcBeam>(d =>
                     {
@@ -804,7 +804,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification == "IfcColumn")
+                else if (def.IfcClassification.StartsWith("IfcColumn"))
                 {
                     ret = model.Instances.New<IfcColumn>(d =>
                     {
@@ -812,7 +812,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification == "IfcSlab")
+                else if (def.IfcClassification.StartsWith("IfcSlab"))
                 {
                     ret = model.Instances.New<IfcSlab>(d =>
                     {
