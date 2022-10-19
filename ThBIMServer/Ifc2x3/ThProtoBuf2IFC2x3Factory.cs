@@ -359,7 +359,7 @@ namespace ThMEPIFC.Ifc2x3
         }
 
         #region Wall
-        public static IfcWall CreateWall(IfcStore model, ThTCHWallData wall, ThTCHPoint3d floor_origin)
+        public static IfcWall CreateWall(IfcStore model, ThTCHWallData wall, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Wall"))
             {
@@ -375,7 +375,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
                 //object placement
-                var transform = GetTransfrom(wall, floor_origin);
+                var transform = GetTransfrom(wall, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
 
                 // add properties
@@ -426,7 +426,7 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region Door
-        public static IfcDoor CreateDoor(IfcStore model, ThTCHDoorData door, ThTCHPoint3d floor_origin)
+        public static IfcDoor CreateDoor(IfcStore model, ThTCHDoorData door, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Door"))
             {
@@ -442,7 +442,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
                 //object placement
-                var transform = GetTransfrom(door, floor_origin);
+                var transform = GetTransfrom(door, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
 
                 // add properties
@@ -480,7 +480,7 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region Hole
-        public static IfcOpeningElement CreateHole(IfcStore model, ThTCHWallData wall, ThTCHDoorData door, ThTCHPoint3d floor_origin)
+        public static IfcOpeningElement CreateHole(IfcStore model, ThTCHWallData wall, ThTCHDoorData door, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
@@ -496,7 +496,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
                 //object placement
-                var transform = GetTransfrom(door, floor_origin);
+                var transform = GetTransfrom(door, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
 
                 txn.Commit();
@@ -504,7 +504,7 @@ namespace ThMEPIFC.Ifc2x3
             }
         }
 
-        public static IfcOpeningElement CreateHole(IfcStore model, ThTCHWallData wall, ThTCHWindowData window, ThTCHPoint3d floor_origin)
+        public static IfcOpeningElement CreateHole(IfcStore model, ThTCHWallData wall, ThTCHWindowData window, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
@@ -520,7 +520,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
                 //object placement
-                var transform = GetTransfrom(window, floor_origin);
+                var transform = GetTransfrom(window, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
 
                 txn.Commit();
@@ -528,7 +528,7 @@ namespace ThMEPIFC.Ifc2x3
             }
         }
 
-        public static IfcOpeningElement CreateHole(IfcStore model, ThTCHOpeningData hole, ThTCHPoint3d floor_origin)
+        public static IfcOpeningElement CreateHole(IfcStore model, ThTCHOpeningData hole, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
@@ -543,7 +543,7 @@ namespace ThMEPIFC.Ifc2x3
                 var solid = model.ToIfcExtrudedAreaSolid(profile, ZAxis, hole.BuildElement.Height);
 
                 //object placement
-                var transform = GetTransfrom(hole, floor_origin);
+                var transform = GetTransfrom(hole, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
 
                 txn.Commit();
@@ -588,7 +588,7 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region Window
-        public static IfcWindow CreateWindow(IfcStore model, ThTCHWindowData window, ThTCHPoint3d floor_origin)
+        public static IfcWindow CreateWindow(IfcStore model, ThTCHWindowData window, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Window"))
             {
@@ -604,7 +604,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
                 //object placement
-                var transform = GetTransfrom(window, floor_origin);
+                var transform = GetTransfrom(window, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
 
                 // add properties
@@ -675,7 +675,7 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region Slab
-        public static IfcSlab CreateBrepSlab(IfcStore model, ThTCHSlabData slab, ThTCHPoint3d floor_origin, ThXbimSlabEngine slabxbimEngine)
+        public static IfcSlab CreateBrepSlab(IfcStore model, ThTCHSlabData slab, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Slab"))
             {
@@ -686,13 +686,13 @@ namespace ThMEPIFC.Ifc2x3
                 });
 
                 //create representation
-                var solids = slab.GetSlabSolid(slabxbimEngine);
+                var solids = slab.GetSlabSolid();
                 var body = model.CreateIfcFacetedBrep(solids);
                 var shape = ThIFC2x3Factory.CreateBrepBody(model, body);
                 ret.Representation = ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
 
                 //object placement
-                ret.ObjectPlacement = model.ToIfcLocalPlacement(floor_origin);
+                ret.ObjectPlacement = model.ToIfcLocalPlacement(storey.Origin);
 
                 // add properties
                 model.Instances.New<IfcRelDefinesByProperties>(rel =>
@@ -720,7 +720,7 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region Railing
-        public static IfcRailing CreateRailing(IfcStore model, ThTCHRailingData railing, ThTCHPoint3d floor_origin)
+        public static IfcRailing CreateRailing(IfcStore model, ThTCHRailingData railing, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Railing"))
             {
@@ -738,6 +738,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
                 //object placement
+                var floor_origin = storey.Origin;
                 var planeOrigin = new ThTCHPoint3d
                 {
                     X = floor_origin.X,
@@ -753,7 +754,7 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region Room
-        public static IfcSpace CreateRoom(IfcStore model, ThTCHRoomData space, ThTCHPoint3d floor_origin)
+        public static IfcSpace CreateRoom(IfcStore model, ThTCHRoomData space, ThTCHBuildingStoreyData storey)
         {
             using (var txn = model.BeginTransaction("Create Room"))
             {
@@ -768,7 +769,7 @@ namespace ThMEPIFC.Ifc2x3
                 var profile = model.ToIfcArbitraryProfileDefWithVoids(space.BuildElement.Outline);
                 var solid = model.ToIfcExtrudedAreaSolid(profile, ZAxis, space.BuildElement.Height);
                 ret.Representation = CreateProductDefinitionShape(model, solid);
-                ret.ObjectPlacement = model.ToIfcLocalPlacement(floor_origin);
+                ret.ObjectPlacement = model.ToIfcLocalPlacement(storey.Origin);
                 txn.Commit();
                 return ret;
             }

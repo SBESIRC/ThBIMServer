@@ -13,11 +13,12 @@ namespace ThMEPIFC.Ifc2x3
         public static readonly XbimVector3D ZAxis = new XbimVector3D(0, 0, 1);
         public static readonly XbimMatrix3D WordMatrix = new XbimMatrix3D(XbimVector3D.Zero);
 
-        public static List<IXbimSolid> GetSlabSolid(this ThTCHSlabData slab, ThXbimSlabEngine slabxbimEngine)
+        public static List<IXbimSolid> GetSlabSolid(this ThTCHSlabData slab)
         {
             var geometryParam = slab.BuildElement;
             var slabDes = slab.Descendings;
             XbimVector3D moveVector = XbimVector3D.Zero;
+            ThXbimSlabEngine slabxbimEngine = new ThXbimSlabEngine();
             IXbimSolidSet solidSet = slabxbimEngine.Engine.CreateSolidSet();
             var slabSolid = GetXBimSolid(geometryParam, moveVector, slabxbimEngine);
             foreach (var item in slabSolid)
