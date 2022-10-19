@@ -4,8 +4,11 @@
     {
         public static void Main(string[] args)
         {
-            PipeService service = new PipeService();
-            service.Work();
+            //var service = new PipeService();
+            //service.Work();
+
+            var service = new IfcDeductService();
+            service.Deduct();
         }
     }
 }

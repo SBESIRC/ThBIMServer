@@ -200,7 +200,7 @@ namespace ThMEPIFC.Ifc2x3
             }
         }
 
-        private static IfcProductDefinitionShape CreateProductDefinitionShape(IfcStore model, IfcExtrudedAreaSolid solid)
+        public static IfcProductDefinitionShape CreateProductDefinitionShape(IfcStore model, IfcExtrudedAreaSolid solid)
         {
             var shape = ThIFC2x3Factory.CreateSweptSolidBody(model, solid);
             return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
