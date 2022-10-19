@@ -16,6 +16,7 @@ namespace ThMEPIFC.Ifc2x3
         {
             if (model != null)
             {
+                var storeys = new List<IfcBuildingStorey>();
                 var site = ThProtoBuf2IFC2x3Factory.CreateSite(model);
                 var building = ThProtoBuf2IFC2x3Factory.CreateBuilding(model, site, project.Site.Buildings[0]);
                 foreach (var thtchstorey in project.Site.Buildings[0].Storeys)
@@ -30,6 +31,7 @@ namespace ThMEPIFC.Ifc2x3
                     var rooms = new List<IfcSpace>();
                     var floor_origin = thtchstorey.Origin;
                     var storey = ThProtoBuf2IFC2x3Factory.CreateStorey(model, building, thtchstorey);
+                    storeys.Add(storey);
                     foreach (var thtchwall in thtchstorey.Walls)
                     {
                         var wall = ThProtoBuf2IFC2x3Factory.CreateWall(model, thtchwall, floor_origin);
@@ -90,6 +92,9 @@ namespace ThMEPIFC.Ifc2x3
                     // IfcRelDefinesByType 关系
                     ThProtoBuf2IFC2x3RelDefinesFactory.RelDefinesByType2Wall(model, walls);
                 }
+
+                // IfcRelAggregates 关系
+                ThProtoBuf2IFC2x3RelAggregatesFactory.Create(model, building, storeys);
             }
         }
 

@@ -152,12 +152,6 @@ namespace ThMEPIFC.Ifc2x3
                     s.Elevation = storey.Elevation;
                     s.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
-                // setup aggregation relationship
-                var ifcRel = model.Instances.New<IfcRelAggregates>();
-                ifcRel.RelatingObject = building;
-                ifcRel.RelatedObjects.Add(ret);
-
-                // add properties
                 model.Instances.New<IfcRelDefinesByProperties>(rel =>
                 {
                     rel.Name = "THifc properties";
