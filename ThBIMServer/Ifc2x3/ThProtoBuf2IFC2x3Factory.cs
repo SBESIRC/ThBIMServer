@@ -1,23 +1,25 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+
 using Xbim.Ifc;
 using Xbim.Common;
 using Xbim.Ifc2x3.Kernel;
 using Xbim.Common.Geometry;
 using Xbim.Ifc2x3.Interfaces;
 using Xbim.Ifc2x3.ProfileResource;
-using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.MeasureResource;
 using Xbim.Ifc2x3.UtilityResource;
+using Xbim.Ifc2x3.GeometryResource;
+using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.PropertyResource;
 using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.RepresentationResource;
-using Xbim.Ifc2x3.GeometryResource;
+
 using ThMEPIFC.Geometry;
-using ThBIMServer.Geometry;
 using ThBIMServer.Ifc2x3;
+using ThBIMServer.Geometry;
 
 namespace ThMEPIFC.Ifc2x3
 {
@@ -403,13 +405,13 @@ namespace ThMEPIFC.Ifc2x3
             var offset = new XbimVector3D(
                 floor_origin.X + wall.BuildElement.Origin.X,
                 floor_origin.Y + wall.BuildElement.Origin.Y,
-                floor_origin.Z + wall.BuildElement.Outline.Shell.Points[0].Z + wall.BuildElement.Origin.Z);
+                floor_origin.Z + wall.BuildElement.Origin.Z);
             return ThXbimExtension.MultipleTransformFroms(1.0, wall.BuildElement.XVector.ToXbimVector3D(), offset).ToTCHMatrix3d();
         }
 
         private static IfcProfileDef GetProfile(IfcStore model, ThTCHWallData wall)
         {
-            if (wall.BuildElement.Outline.Shell.Points.Count > 0)
+            if (wall.BuildElement.Outline != null && wall.BuildElement.Outline.Shell.Points.Count > 0)
             {
                 return model.ToIfcArbitraryClosedProfileDef(wall.BuildElement.Outline);
             }

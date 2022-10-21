@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Linq;
 
-using Xbim.Ifc2x3.Kernel;
-using Xbim.Ifc2x3.ProfileResource;
-using Xbim.Ifc2x3.GeometryResource;
-using Xbim.Ifc2x3.SharedBldgElements;
-using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc4.Kernel;
+using Xbim.Ifc4.ProfileResource;
+using Xbim.Ifc4.GeometryResource;
+using Xbim.Ifc4.SharedBldgElements;
+using Xbim.Ifc4.GeometricModelResource;
 
-namespace ThBIMServer.Ifc2x3
+namespace ThBIMServer.Ifc4
 {
-    public static class ThIFC2x32ProtoBufFactory
+    public static class ThIFC42ProtoBufFactory
     {
         /// <summary>
         /// 根据ifc中墙的数据创建TCHProjectData
@@ -39,7 +39,7 @@ namespace ThBIMServer.Ifc2x3
             foreach (var storey in buildingStoreys)
             {
                 var floorName = ((IfcRoot)storey).Name.Value;
-                var floorNum = ((string)floorName).Remove(1);
+                var floorNum = ((string)floorName);
                 var elevation = (double)storey.Elevation;
                 var levelHeight = 0.0;
 

@@ -6,6 +6,7 @@ using Xbim.Common.Step21;
 using Xbim.Ifc2x3.Kernel;
 
 using ThBIMServer.Ifc2x3;
+using ThBIMServer.Ifc4;
 using ThBIMServer.ModelMerge;
 
 namespace ThBIMServer
@@ -17,7 +18,7 @@ namespace ThBIMServer
         public void Deduct()
         {
             var archPath = "D:\\项目\\三维平台\\测试图\\ifc\\建筑1012.ifc";
-            var struPath = "D:\\项目\\三维平台\\测试图\\ifc\\TH000000_标准测试项目_1#楼_结构_IFC模型.ifc";
+            var struPath = "D:\\项目\\三维平台\\测试图\\ifc\\0929-结构.ifc";
 
             PropertyTranformDelegate semanticFilter = (property, parentObject) =>
             {
@@ -69,12 +70,22 @@ namespace ThBIMServer
 
                 using (var model = IfcStore.Open(struPath))
                 {
-                    var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
-                    if (project != null)
+                    var project2x3 = model.Instances.OfType<Xbim.Ifc2x3.Kernel.IfcProject>().FirstOrDefault();
+                    if (project2x3 != null)
                     {
-                        var tchProject = ThIFC2x32ProtoBufFactory.CreateTCHProject(project);
+                        var tchProject = ThIFC2x32ProtoBufFactory.CreateTCHProject(project2x3);
                         var mergeService = new ThModelMergeService();
                         mergeService.ModelMerge(iModel, tchProject);
+                    }
+                    else
+                    {
+                        var project4 = model.Instances.OfType<Xbim.Ifc4.Kernel.IfcProject>().FirstOrDefault();
+                        if (project4 != null)
+                        {
+                            var tchProject = ThIFC42ProtoBufFactory.CreateTCHProject(project4);
+                            var mergeService = new ThModelMergeService();
+                            mergeService.ModelMerge(iModel, tchProject);
+                        }
                     }
                 }
 
