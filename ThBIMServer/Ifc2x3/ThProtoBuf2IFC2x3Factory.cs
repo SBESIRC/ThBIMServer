@@ -798,6 +798,25 @@ namespace ThMEPIFC.Ifc2x3
                         d.Name = "SU Element";
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
+                    if (def.InstanceName != null)
+                    {
+                        var info = def.InstanceName.Replace(" ","").Replace("x",",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
+                        info = "su," + info;
+                        model.Instances.New<IfcRelDefinesByProperties>(rel =>
+                        {
+                            rel.Name = "THifc properties";
+                            rel.RelatedObjects.Add(ret);
+                            rel.RelatingPropertyDefinition = model.Instances.New<IfcPropertySet>(pset =>
+                            {
+                                pset.Name = "Basic set of THifc properties";
+                                pset.HasProperties.Add(model.Instances.New<IfcPropertySingleValue>(p =>
+                                {
+                                    p.Name = "Remark";
+                                    p.NominalValue = new IfcText(info);
+                                }));
+                            });
+                        });
+                    }
                 }
                 else if (def.IfcClassification.StartsWith("IfcColumn"))
                 {
@@ -824,7 +843,66 @@ namespace ThMEPIFC.Ifc2x3
                     });
                 }
 
-                IfcFacetedBrep mesh = model.ToIfcFaceBasedSurface(def);
+                IfcFacetedBrep mesh = model.ToIfcFacetedBrep(def);
+                var shape = ThIFC2x3Factory.CreateFaceBasedSurfaceBody(model, mesh);
+                ret.Representation = ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
+
+                //object placement
+                ret.ObjectPlacement = model.ToIfcLocalPlacement(trans);
+
+                txn.Commit();
+                return ret;
+            }
+
+        }
+
+        public static IfcBuildingElement CreatedSUElementWithSUMesh(IfcStore model, ThSUCompDefinitionData def, ThTCHMatrix3d trans)
+        {
+            IfcBuildingElement ret;
+            using (var txn = model.BeginTransaction("Create SU Element"))
+            {
+                if (def.IfcClassification.StartsWith("IfcWall"))
+                {
+                    ret = model.Instances.New<IfcWall>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else if (def.IfcClassification.StartsWith("IfcBeam"))
+                {
+                    ret = model.Instances.New<IfcBeam>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else if (def.IfcClassification.StartsWith("IfcColumn"))
+                {
+                    ret = model.Instances.New<IfcColumn>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else if (def.IfcClassification.StartsWith("IfcSlab"))
+                {
+                    ret = model.Instances.New<IfcSlab>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+                else
+                {
+                    ret = model.Instances.New<IfcBuildingElementProxy>(d =>
+                    {
+                        d.Name = "SU Element";
+                        d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
+                    });
+                }
+
+                IfcFaceBasedSurfaceModel mesh = model.ToIfcFaceBasedSurface(def);
                 var shape = ThIFC2x3Factory.CreateFaceBasedSurfaceBody(model, mesh);
                 ret.Representation = ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
 

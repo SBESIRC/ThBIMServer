@@ -96,6 +96,7 @@ namespace ThMEPIFC.Ifc2x3
 
         public static void BuildIfcModel(IfcStore model, ThSUProjectData project)
         {
+            var SUIsFaceMesh = project.IsFaceMesh;
             if (model != null)
             {
                 // 虚拟set
@@ -108,7 +109,15 @@ namespace ThMEPIFC.Ifc2x3
                 {
                     var def = definitions[element.Component.DefinitionIndex];
                     var trans = element.Component.Transformations;
-                    var ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(model, def, trans);
+                    IfcBuildingElement ifcBuildingElement;
+                    if (SUIsFaceMesh)
+                    {
+                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElementWithSUMesh(model, def, trans);
+                    }
+                    else
+                    {
+                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(model, def, trans);
+                    }
                     suElements.Add(ifcBuildingElement);
                 }
                 ThProtoBuf2IFC2x3Factory.RelContainsSUElements2Storey(model, suElements, storey);

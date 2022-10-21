@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.TopologyResource;
 using Xbim.Ifc2x3.GeometricModelResource;
+using System;
 
 namespace ThMEPIFC.Ifc2x3
 {
@@ -55,11 +56,28 @@ namespace ThMEPIFC.Ifc2x3
             return NewBrep;
         }
 
-        public static IfcFacetedBrep ToIfcFaceBasedSurface(this IfcStore model, ThSUCompDefinitionData def)
+        public static IfcFaceBasedSurfaceModel ToIfcFaceBasedSurface(this IfcStore model, ThSUCompDefinitionData def)
+        {
+            var connectedFaceSet = model.Instances.New<IfcConnectedFaceSet>();
+            var faceBasedSurface = model.Instances.New<IfcFaceBasedSurfaceModel>();
+            foreach (var face in def.MeshFaces)
+            {
+                var mesh = face.Mesh;
+                for (int i = 0; i < mesh.Polygons.Count; i++)
+                {
+                    var vertices = Vertices(mesh, mesh.Polygons[i]);
+                    connectedFaceSet.CfsFaces.Add(ToIfcFace(model, vertices));
+                }
+            }
+            faceBasedSurface.FbsmFaces.Add(connectedFaceSet);
+            return faceBasedSurface;
+        }
+
+        public static IfcFacetedBrep ToIfcFacetedBrep(this IfcStore model, ThSUCompDefinitionData def)
         {
             var NewBrep = model.Instances.New<IfcFacetedBrep>();
             var ifcClosedShell = model.Instances.New<IfcClosedShell>();
-            foreach (var face in def.Faces)
+            foreach (var face in def.BrepFaces)
             {
                 var ifcface = model.Instances.New<IfcFace>();
                 ifcface.Bounds.Add(model.ToIfcFaceOuterBound(face.OuterLoop.Points.ToList()));
@@ -103,6 +121,23 @@ namespace ThMEPIFC.Ifc2x3
                 polyLoop.Polygon.Add(model.ToIfcCartesianPoint(v));
             }
             return polyLoop;
+        }
+
+        private static List<ThTCHPoint3d> Vertices(ThSUPolygonMesh mesh, ThSUPolygon polygon)
+        {
+            List<ThTCHPoint3d> vertices = new List<ThTCHPoint3d>();
+            for (int i = 0; i < polygon.Indices.Count; i++)
+            {
+                vertices.Add(mesh.Points[Math.Abs(polygon.Indices[i]) - 1]);
+            }
+            return vertices;
+        }
+
+        private static IfcFace ToIfcFace(this IfcStore model, List<ThTCHPoint3d> vertices)
+        {
+            var ifcFace = model.Instances.New<IfcFace>();
+            ifcFace.Bounds.Add(ToIfcFaceBound(model, vertices));
+            return ifcFace;
         }
     }
 }
