@@ -6,46 +6,13 @@ using Xbim.IO;
 using Xbim.Ifc;
 using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.SharedBldgElements;
+
 using ThBIMServer.Ifc2x3;
-using System.Linq;
-using ThBIMServer.Transformer;
 
 namespace ThMEPIFC.Ifc2x3
 {
     public class ThProtoBuf2IFC2x3Builder
     {
-        public static void MergeShearWalls(IfcStore model, List<IfcWall> walls)
-        {
-            // 计算每个墙所在的楼层，并把墙添加到对应的楼层中
-            // 取出建筑墙和剪力墙，获取他们的二维profile，并建立空间索引
-            // 遍历剪力墙，在建筑墙的空间索引中查找被扣减的对象（具体的算法逻辑需要细化）
-            // 对于需要扣减的对子（建筑墙和剪力墙)，建立开洞关系
-            var targetWalls = IfcWallCloneService.CreateWall(model, walls);
-            var storeys = model.Instances.OfType<IfcBuildingStorey>().ToList();
-            storeys.ForEach(o =>
-            {
-                var storeyWalls = targetWalls;
-                ThProtoBuf2IFC2x3Factory.RelContainWalls2Storey(model, storeyWalls, o);
-            });
-
-
-
-        }
-
-        //public int GetMinFloorNo(double itemz)
-        //{
-        //    foreach (var storey in Buildingstoreys.Values)
-        //    {
-        //        var buttom = storey.bottom_elevation;
-        //        var top = storey.top_elevation;
-        //        if (itemz <= top && itemz >= buttom)
-        //        {
-        //            return storey.floorNo;
-        //        }
-        //    }
-        //    return -100;
-        //}
-
         public static void BuildIfcModel(IfcStore model, ThTCHProjectData project)
         {
             if (model != null)

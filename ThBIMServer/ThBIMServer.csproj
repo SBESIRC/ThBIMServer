@@ -103,10 +103,10 @@
     <Compile Include="Ifc2x3\ThXbimSlabEngine.cs" />
     <Compile Include="IfcDeductService.cs" />
     <Compile Include="IfcInsertCopyService.cs" />
+    <Compile Include="ModelMerge\ThModelMergeService.cs" />
     <Compile Include="PipeService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Transformer\IfcWallCloneService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

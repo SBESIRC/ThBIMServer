@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ThMEPIFC.Ifc2x3;
-using Xbim.Common;
+﻿using System.Linq;
+
 using Xbim.Ifc;
-using Xbim.Ifc2x3.SharedBldgElements;
+using Xbim.Common;
+using Xbim.Common.Step21;
+using Xbim.Ifc2x3.Kernel;
+
+using ThBIMServer.Ifc2x3;
+using ThBIMServer.ModelMerge;
 
 namespace ThBIMServer
 {
@@ -19,16 +19,67 @@ namespace ThBIMServer
             var archPath = "D:\\项目\\三维平台\\测试图\\ifc\\建筑1012.ifc";
             var struPath = "D:\\项目\\三维平台\\测试图\\ifc\\TH000000_标准测试项目_1#楼_结构_IFC模型.ifc";
 
-            using (var archModel = IfcStore.Open(archPath))
-            using (var struModel = IfcStore.Open(struPath))
+            PropertyTranformDelegate semanticFilter = (property, parentObject) =>
             {
-                var shearWalls = struModel.Instances.OfType<IfcWall>().ToList();
-                //var wall = ThProtoBuf2IFC2x3Factory.CreateWall(model, thtchwall, floor_origin);
+                ////leave out geometry and placement
+                //if (parentObject is IfcProduct &&
+                //    (property.PropertyInfo.Name == nameof(IfcProduct.Representation) ||
+                //    property.PropertyInfo.Name == nameof(IfcProduct.ObjectPlacement)))
+                //    return null;
 
-                ThProtoBuf2IFC2x3Builder.MergeShearWalls(archModel, shearWalls);
-                archModel.SaveAs(inserted);
+                ////leave out mapped geometry
+                //if (parentObject is IfcTypeProduct &&
+                //     property.PropertyInfo.Name == nameof(IfcTypeProduct.RepresentationMaps))
+                //    return null;
+
+                ////only bring over IsDefinedBy and IsTypedBy inverse relationships which will take over all properties and types
+                //if (property.EntityAttribute.Order < 0 && !(
+                //    property.PropertyInfo.Name == nameof(IfcProduct.IsDefinedBy) ||
+                //    property.PropertyInfo.Name == nameof(IfcProduct.IsTypedBy)))
+                //    return null;
+
+                return property.PropertyInfo.GetValue(parentObject, null);
+            };
+
+            // 解决方案1：
+            //  第一步，解构：将结构IFC解构成中间模型
+            //  第二步，和模：将建筑IFC和结构中间模型和模
+
+            // 计算每个墙所在的楼层，并把墙添加到对应的楼层中
+            // 取出建筑墙和剪力墙，获取他们的二维profile，并建立空间索引
+            // 遍历剪力墙，在建筑墙的空间索引中查找被扣减的对象（具体的算法逻辑需要细化）
+            // 对于需要扣减的对子（建筑墙和剪力墙)，建立开洞关系
+            using (var iModel = IfcStore.Create(IfcSchemaVersion.Ifc2X3, XbimStoreType.InMemoryModel))
+            {
+                using (var txn = iModel.BeginTransaction("Insert copy"))
+                {
+                    using (var model = IfcStore.Open(archPath))
+                    {
+                        var projects = model.Instances.OfType<IfcProject>();
+                        //single map should be used for all insertions between two models
+                        var map = new XbimInstanceHandleMap(model, iModel);
+
+                        foreach (var project in projects)
+                        {
+                            iModel.InsertCopy(project, map, semanticFilter, true, false);
+                        }
+                    }
+                    txn.Commit();
+                }
+
+                using (var model = IfcStore.Open(struPath))
+                {
+                    var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
+                    if (project != null)
+                    {
+                        var tchProject = ThIFC2x32ProtoBufFactory.CreateTCHProject(project);
+                        var mergeService = new ThModelMergeService();
+                        mergeService.ModelMerge(iModel, tchProject);
+                    }
+                }
+
+                iModel.SaveAs(inserted);
             }
-
         }
     }
 }
