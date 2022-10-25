@@ -103,7 +103,6 @@
     <Compile Include="Ifc2x3\ThXbimSlabEngine.cs" />
     <Compile Include="Ifc4\ThIFC42ProtoBufFactory.cs" />
     <Compile Include="IfcDeductService.cs" />
-    <Compile Include="IfcInsertCopyService.cs" />
     <Compile Include="ModelMerge\ThModelMergeService.cs" />
     <Compile Include="PipeService.cs" />
     <Compile Include="Program.cs" />
