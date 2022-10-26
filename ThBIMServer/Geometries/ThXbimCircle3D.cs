@@ -1,7 +1,7 @@
 ﻿using Xbim.Common.Geometry;
 using MathNet.Spatial.Euclidean;
 
-namespace ThMEPIFC.Geometry
+namespace ThMEPIFC.Geometries
 {
     public class ThXbimCircle3D
     {

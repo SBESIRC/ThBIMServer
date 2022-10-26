@@ -1,8 +1,8 @@
 ﻿using NetTopologySuite.Operation.Buffer;
 
-namespace ThBIMServer.Geometry
+namespace ThBIMServer.NTS
 {
-    public static class ThNTSOperation
+    public static class ThTCHNTSOperation
     {
         public static ThTCHPolyline BufferPL(this ThTCHPolyline polyline, double distance)
         {

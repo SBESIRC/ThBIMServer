@@ -4,7 +4,7 @@ using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.GeometricConstraintResource;
 using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.ProfileResource;
-using ThMEPIFC.Geometry;
+using ThMEPIFC.Geometries;
 
 namespace ThMEPIFC.Ifc2x3
 {

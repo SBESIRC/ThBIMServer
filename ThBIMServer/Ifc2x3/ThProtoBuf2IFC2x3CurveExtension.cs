@@ -2,7 +2,7 @@
 using Xbim.Common.Geometry;
 using Xbim.Ifc2x3.GeometryResource;
 using ThMEPIFC.Ifc2x3;
-using ThMEPIFC.Geometry;
+using ThMEPIFC.Geometries;
 
 namespace ThBIMServer.Ifc2x3
 {
