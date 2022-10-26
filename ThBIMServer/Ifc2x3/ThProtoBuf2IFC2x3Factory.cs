@@ -371,6 +371,9 @@ namespace ThMEPIFC.Ifc2x3
                 var solid = model.ToIfcExtrudedAreaSolid(profile, ZAxis, wall.BuildElement.Height);
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
+                //type
+                ret.AddDefiningType(GetWallType(model, wall));
+
                 //object placement
                 var transform = GetTransfrom(wall, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
@@ -396,6 +399,57 @@ namespace ThMEPIFC.Ifc2x3
 
                 txn.Commit();
                 return ret;
+            }
+        }
+
+        private static IfcWallType GetWallType(IfcStore model, ThTCHWallData wall)
+        {
+            var types = model.Instances.OfType<IfcWallType>().Where(o =>
+            {
+                if (wall.WallType == WallTypeEnum.Partitioning)
+                {
+                    return o.PredefinedType == IfcWallTypeEnum.STANDARD;
+                }
+                else if (wall.WallType == WallTypeEnum.Shear)
+                {
+                    return o.PredefinedType == IfcWallTypeEnum.SHEAR;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            });
+            if (types.Any())
+            {
+                return types.FirstOrDefault();
+            }
+            else
+            {
+                return CreateWallType(model, wall);
+            }
+        }
+
+        private static IfcWallType CreateWallType(IfcStore model, ThTCHWallData wall)
+        {
+            using (var txn = model.BeginTransaction())
+            {
+                var type = model.Instances.New<IfcWallType>(t =>
+                {
+                    if (wall.WallType == WallTypeEnum.Partitioning)
+                    {
+                        t.PredefinedType = IfcWallTypeEnum.STANDARD;
+                    }
+                    else if (wall.WallType == WallTypeEnum.Shear)
+                    {
+                        t.PredefinedType = IfcWallTypeEnum.SHEAR;
+                    }
+                    else
+                    {
+                        throw new NotSupportedException();
+                    }
+                });
+                txn.Commit();
+                return type;
             }
         }
 

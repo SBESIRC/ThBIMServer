@@ -87,7 +87,7 @@ namespace ThMEPIFC.Ifc2x3
                     ThProtoBuf2IFC2x3Factory.RelContainsRooms2Storey(model, rooms, storey);
 
                     // IfcRelDefinesByType 关系
-                    ThProtoBuf2IFC2x3RelDefinesFactory.RelDefinesByType2Wall(model, walls);
+                    ThProtoBuf2IFC2x3RelDefinesFactory.RelDefinesByType2Wall(model, walls, IfcWallTypeEnum.STANDARD);
                 }
 
                 // IfcRelAggregates 关系

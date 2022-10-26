@@ -76,13 +76,12 @@ namespace ThBIMServer.Ifc2x3
         private static ThTCHWallData WallDataEntityToTCHWall(this IfcWall ifcWall)
         {
             var newWall = new ThTCHWallData();
-            newWall.BuildElement = new ThTCHBuiltElementData();
-
-            //newWall.BuildElement.Width = entity.LeftWidth + entity.RightWidth;
-            //newWall.BuildElement.Root = new ThTCHRootData();
-            //newWall.BuildElement.Root.GlobalId = projectId + entity.DBId;
-            newWall.BuildElement.Origin = new ThTCHPoint3d() { X = 0, Y = 0, Z = 0 };
-            newWall.BuildElement.XVector = new ThTCHVector3d() { X = 1, Y = 0, Z = 0 };
+            newWall.WallType = WallTypeEnum.Shear;
+            newWall.BuildElement = new ThTCHBuiltElementData
+            {
+                Origin = new ThTCHPoint3d() { X = 0, Y = 0, Z = 0 },
+                XVector = new ThTCHVector3d() { X = 1, Y = 0, Z = 0 },
+            };
             var material = (Xbim.Ifc4.MaterialResource.IfcMaterialLayerSetUsage)ifcWall.Material;
             if (material != null)
             {
