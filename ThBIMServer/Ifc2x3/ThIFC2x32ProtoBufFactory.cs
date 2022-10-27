@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 
 using Xbim.Ifc2x3.Kernel;
 using Xbim.Ifc2x3.ProfileResource;
@@ -59,7 +60,11 @@ namespace ThBIMServer.Ifc2x3
                 buildingStorey.BuildElement.Properties.Add(new ThTCHProperty { Key = "Height", Value = levelHeight.ToString() });
                 buildingStorey.BuildElement.Properties.Add(new ThTCHProperty { Key = "StdFlrNo", Value = floorNum.ToString() });
 
-                var ifcWalls = storey.ContainsElements.First().RelatedElements.OfType<IfcWall>().ToList();
+                var ifcWalls = new List<IfcWall>();
+                foreach (var r in storey.ContainsElements)
+                {
+                    ifcWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
+                }
                 ifcWalls.ForEach(wall =>
                 {
                     var copyItem = wall.WallDataEntityToTCHWall();

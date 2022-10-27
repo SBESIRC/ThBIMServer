@@ -80,6 +80,7 @@
     <Compile Include="Data\ThTCHWindowData.cs" />
     <Compile Include="Deduct\IfcWallRelationCreater.cs" />
     <Compile Include="NTS\ThIFCNTSFixedPrecision.cs" />
+    <Compile Include="NTS\ThNTSOperation.cs" />
     <Compile Include="NTS\ThTCHNTSExtension.cs" />
     <Compile Include="NTS\ThTCHNTSOperation.cs" />
     <Compile Include="Geometries\ThXbimCircle3D.cs" />

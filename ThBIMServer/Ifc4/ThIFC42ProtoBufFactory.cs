@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 
 using Xbim.Ifc4.Kernel;
 using Xbim.Ifc4.ProfileResource;
@@ -59,7 +60,11 @@ namespace ThBIMServer.Ifc4
                 buildingStorey.BuildElement.Properties.Add(new ThTCHProperty { Key = "Height", Value = levelHeight.ToString() });
                 buildingStorey.BuildElement.Properties.Add(new ThTCHProperty { Key = "StdFlrNo", Value = floorNum.ToString() });
 
-                var ifcWalls = storey.ContainsElements.First().RelatedElements.OfType<IfcWall>().ToList();
+                var ifcWalls = new List<IfcWall>();
+                foreach (var r in storey.ContainsElements)
+                {
+                    ifcWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
+                }
                 ifcWalls.ForEach(wall =>
                 {
                     var copyItem = wall.WallDataEntityToTCHWall();
@@ -97,6 +102,11 @@ namespace ThBIMServer.Ifc4
                 }
                 else if (areaSolid.SweptArea is IfcRectangleProfileDef rectangleProfile)
                 {
+                    // 其余属性Location,P是否需要赋值存疑
+                    if (rectangleProfile.Position.Location.X != 0)
+                    {
+                        throw new NotImplementedException();
+                    }
                     newWall.BuildElement.Length = rectangleProfile.XDim;
                     newWall.BuildElement.Width = rectangleProfile.YDim;
                 }
