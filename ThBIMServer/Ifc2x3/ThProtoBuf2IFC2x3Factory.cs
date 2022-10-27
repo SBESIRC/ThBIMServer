@@ -778,12 +778,12 @@ namespace ThMEPIFC.Ifc2x3
         #endregion
 
         #region SU Element
-        public static IfcBuildingElement CreatedSUElement(IfcStore model, ThSUCompDefinitionData def, ThTCHMatrix3d trans)
+        public static IfcBuildingElement CreatedSUElement(IfcStore model, ThSUCompDefinitionData def, ThSUComponentData componentData)
         {
             IfcBuildingElement ret;
             using (var txn = model.BeginTransaction("Create SU Element"))
             {
-                if (def.IfcClassification.StartsWith("IfcWall"))
+                if (componentData.IfcClassification.StartsWith("IfcWall"))
                 {
                     ret = model.Instances.New<IfcWall>(d =>
                     {
@@ -791,16 +791,16 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification.StartsWith("IfcBeam"))
+                else if (componentData.IfcClassification.StartsWith("IfcBeam"))
                 {
                     ret = model.Instances.New<IfcBeam>(d =>
                     {
                         d.Name = "SU Element";
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
-                    if (def.InstanceName != null)
+                    if (componentData.InstanceName != null)
                     {
-                        var info = def.InstanceName.Replace(" ","").Replace("x",",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
+                        var info = componentData.InstanceName.Replace(" ","").Replace("x",",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
                         info = "su," + info;
                         model.Instances.New<IfcRelDefinesByProperties>(rel =>
                         {
@@ -818,7 +818,7 @@ namespace ThMEPIFC.Ifc2x3
                         });
                     }
                 }
-                else if (def.IfcClassification.StartsWith("IfcColumn"))
+                else if (componentData.IfcClassification.StartsWith("IfcColumn"))
                 {
                     ret = model.Instances.New<IfcColumn>(d =>
                     {
@@ -826,7 +826,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification.StartsWith("IfcSlab"))
+                else if (componentData.IfcClassification.StartsWith("IfcSlab"))
                 {
                     ret = model.Instances.New<IfcSlab>(d =>
                     {
@@ -848,7 +848,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
 
                 //object placement
-                ret.ObjectPlacement = model.ToIfcLocalPlacement(trans);
+                ret.ObjectPlacement = model.ToIfcLocalPlacement(componentData.Transformations);
 
                 txn.Commit();
                 return ret;
@@ -856,12 +856,12 @@ namespace ThMEPIFC.Ifc2x3
 
         }
 
-        public static IfcBuildingElement CreatedSUElementWithSUMesh(IfcStore model, ThSUCompDefinitionData def, ThTCHMatrix3d trans)
+        public static IfcBuildingElement CreatedSUElementWithSUMesh(IfcStore model, ThSUCompDefinitionData def, ThSUComponentData componentData)
         {
             IfcBuildingElement ret;
             using (var txn = model.BeginTransaction("Create SU Element"))
             {
-                if (def.IfcClassification.StartsWith("IfcWall"))
+                if (componentData.IfcClassification.StartsWith("IfcWall"))
                 {
                     ret = model.Instances.New<IfcWall>(d =>
                     {
@@ -869,7 +869,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification.StartsWith("IfcBeam"))
+                else if (componentData.IfcClassification.StartsWith("IfcBeam"))
                 {
                     ret = model.Instances.New<IfcBeam>(d =>
                     {
@@ -877,7 +877,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification.StartsWith("IfcColumn"))
+                else if (componentData.IfcClassification.StartsWith("IfcColumn"))
                 {
                     ret = model.Instances.New<IfcColumn>(d =>
                     {
@@ -885,7 +885,7 @@ namespace ThMEPIFC.Ifc2x3
                         d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                     });
                 }
-                else if (def.IfcClassification.StartsWith("IfcSlab"))
+                else if (componentData.IfcClassification.StartsWith("IfcSlab"))
                 {
                     ret = model.Instances.New<IfcSlab>(d =>
                     {
@@ -907,7 +907,7 @@ namespace ThMEPIFC.Ifc2x3
                 ret.Representation = ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
 
                 //object placement
-                ret.ObjectPlacement = model.ToIfcLocalPlacement(trans);
+                ret.ObjectPlacement = model.ToIfcLocalPlacement(componentData.Transformations);
 
                 txn.Commit();
                 return ret;

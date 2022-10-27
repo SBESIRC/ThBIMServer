@@ -108,15 +108,14 @@ namespace ThMEPIFC.Ifc2x3
                 foreach (var element in project.Buildings)
                 {
                     var def = definitions[element.Component.DefinitionIndex];
-                    var trans = element.Component.Transformations;
                     IfcBuildingElement ifcBuildingElement;
                     if (SUIsFaceMesh)
                     {
-                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElementWithSUMesh(model, def, trans);
+                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElementWithSUMesh(model, def, element.Component);
                     }
                     else
                     {
-                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(model, def, trans);
+                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(model, def, element.Component);
                     }
                     suElements.Add(ifcBuildingElement);
                 }
