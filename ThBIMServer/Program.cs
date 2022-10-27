@@ -1,4 +1,6 @@
-﻿namespace ThBIMServer
+﻿using ThBIMServer.Deduct;
+
+namespace ThBIMServer
 {
     public class Program
     {

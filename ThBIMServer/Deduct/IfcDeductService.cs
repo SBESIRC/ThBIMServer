@@ -8,8 +8,9 @@ using Xbim.Ifc2x3.Kernel;
 using ThBIMServer.Ifc2x3;
 using ThBIMServer.Ifc4;
 using ThBIMServer.ModelMerge;
+using NetTopologySuite.Operation.Valid;
 
-namespace ThBIMServer
+namespace ThBIMServer.Deduct
 {
     public class IfcDeductService
     {
@@ -20,27 +21,7 @@ namespace ThBIMServer
             var archPath = "D:\\项目\\三维平台\\测试图\\ifc\\建筑1012.ifc";
             var struPath = "D:\\项目\\三维平台\\测试图\\ifc\\0929-结构.ifc";
 
-            PropertyTranformDelegate semanticFilter = (property, parentObject) =>
-            {
-                ////leave out geometry and placement
-                //if (parentObject is IfcProduct &&
-                //    (property.PropertyInfo.Name == nameof(IfcProduct.Representation) ||
-                //    property.PropertyInfo.Name == nameof(IfcProduct.ObjectPlacement)))
-                //    return null;
-
-                ////leave out mapped geometry
-                //if (parentObject is IfcTypeProduct &&
-                //     property.PropertyInfo.Name == nameof(IfcTypeProduct.RepresentationMaps))
-                //    return null;
-
-                ////only bring over IsDefinedBy and IsTypedBy inverse relationships which will take over all properties and types
-                //if (property.EntityAttribute.Order < 0 && !(
-                //    property.PropertyInfo.Name == nameof(IfcProduct.IsDefinedBy) ||
-                //    property.PropertyInfo.Name == nameof(IfcProduct.IsTypedBy)))
-                //    return null;
-
-                return property.PropertyInfo.GetValue(parentObject, null);
-            };
+            var semanticFilter = Filter();
 
             // 解决方案1：
             //  第一步，解构：将结构IFC解构成中间模型
@@ -89,8 +70,37 @@ namespace ThBIMServer
                     }
                 }
 
+                var creater = new IfcWallRelationCreater();
+                creater.CreateRelation(iModel);
+
                 iModel.SaveAs(inserted);
             }
+        }
+
+        private PropertyTranformDelegate Filter()
+        {
+            PropertyTranformDelegate semanticFilter = (property, parentObject) =>
+            {
+                ////leave out geometry and placement
+                //if (parentObject is IfcProduct &&
+                //    (property.PropertyInfo.Name == nameof(IfcProduct.Representation) ||
+                //    property.PropertyInfo.Name == nameof(IfcProduct.ObjectPlacement)))
+                //    return null;
+
+                ////leave out mapped geometry
+                //if (parentObject is IfcTypeProduct &&
+                //     property.PropertyInfo.Name == nameof(IfcTypeProduct.RepresentationMaps))
+                //    return null;
+
+                ////only bring over IsDefinedBy and IsTypedBy inverse relationships which will take over all properties and types
+                //if (property.EntityAttribute.Order < 0 && !(
+                //    property.PropertyInfo.Name == nameof(IfcProduct.IsDefinedBy) ||
+                //    property.PropertyInfo.Name == nameof(IfcProduct.IsTypedBy)))
+                //    return null;
+
+                return property.PropertyInfo.GetValue(parentObject, null);
+            };
+            return semanticFilter;
         }
     }
 }

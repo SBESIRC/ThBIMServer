@@ -431,26 +431,22 @@ namespace ThMEPIFC.Ifc2x3
 
         private static IfcWallType CreateWallType(IfcStore model, ThTCHWallData wall)
         {
-            using (var txn = model.BeginTransaction())
+            var type = model.Instances.New<IfcWallType>(t =>
             {
-                var type = model.Instances.New<IfcWallType>(t =>
+                if (wall.WallType == WallTypeEnum.Partitioning)
                 {
-                    if (wall.WallType == WallTypeEnum.Partitioning)
-                    {
-                        t.PredefinedType = IfcWallTypeEnum.STANDARD;
-                    }
-                    else if (wall.WallType == WallTypeEnum.Shear)
-                    {
-                        t.PredefinedType = IfcWallTypeEnum.SHEAR;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException();
-                    }
-                });
-                txn.Commit();
-                return type;
-            }
+                    t.PredefinedType = IfcWallTypeEnum.STANDARD;
+                }
+                else if (wall.WallType == WallTypeEnum.Shear)
+                {
+                    t.PredefinedType = IfcWallTypeEnum.SHEAR;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            });
+            return type;
         }
 
         private static ThTCHMatrix3d GetTransfrom(ThTCHWallData wall, ThTCHPoint3d floor_origin)

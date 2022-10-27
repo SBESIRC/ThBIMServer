@@ -78,6 +78,7 @@
     <Compile Include="Data\ThTCHSlabData.cs" />
     <Compile Include="Data\ThTCHWallData.cs" />
     <Compile Include="Data\ThTCHWindowData.cs" />
+    <Compile Include="Deduct\IfcWallRelationCreater.cs" />
     <Compile Include="NTS\ThIFCNTSFixedPrecision.cs" />
     <Compile Include="NTS\ThTCHNTSExtension.cs" />
     <Compile Include="NTS\ThTCHNTSOperation.cs" />
@@ -103,7 +104,7 @@
     <Compile Include="Ifc2x3\ThProtoBuf2IFCSolid3dExtension.cs" />
     <Compile Include="Ifc2x3\ThXbimSlabEngine.cs" />
     <Compile Include="Ifc4\ThIFC42ProtoBufFactory.cs" />
-    <Compile Include="IfcDeductService.cs" />
+    <Compile Include="Deduct\IfcDeductService.cs" />
     <Compile Include="ModelMerge\ThModelMergeService.cs" />
     <Compile Include="NTS\ThIFCNTSService.cs" />
     <Compile Include="NTS\ThIFCNTSExtension.cs" />
