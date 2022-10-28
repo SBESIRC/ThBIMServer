@@ -3,7 +3,7 @@ using Xbim.Common.Step21;
 using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.RepresentationResource;
 
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public class ThIFC2x3Factory
     {

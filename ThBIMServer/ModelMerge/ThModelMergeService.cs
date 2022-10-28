@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Collections.Generic;
 
-using ThMEPIFC.Ifc2x3;
-
 using Xbim.Ifc;
 using Xbim.Ifc4.MeasureResource;
+
+using ThBIMServer.Ifc2x3;
 
 namespace ThBIMServer.ModelMerge
 {

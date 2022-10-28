@@ -7,9 +7,7 @@ using Xbim.Ifc;
 using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.SharedBldgElements;
 
-using ThBIMServer.Ifc2x3;
-
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public class ThProtoBuf2IFC2x3Builder
     {

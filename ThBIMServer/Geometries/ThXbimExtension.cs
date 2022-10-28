@@ -3,7 +3,7 @@ using MathNet.Spatial.Euclidean;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Units;
 
-namespace ThMEPIFC.Geometries
+namespace ThBIMServer.Geometries
 {
     public static class ThXbimExtension
     {

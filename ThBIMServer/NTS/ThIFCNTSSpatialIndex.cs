@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+
+using Xbim.Ifc2x3.ProfileResource;
+using Xbim.Ifc2x3.GeometryResource;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Index.Strtree;
 using NetTopologySuite.Geometries.Prepared;
-using Xbim.Ifc2x3.ProfileResource;
-using Xbim.Ifc2x3.GeometryResource;
 
 namespace ThBIMServer.NTS
 {
     public class ThIFCNTSSpatialIndex : IDisposable
     {
         private STRtree<Geometry> Engine { get; set; }
-        private Dictionary<IfcProfileDef, Geometry> Geometries { get; set; }
-        private Lookup<Geometry, IfcProfileDef> GeometryLookup { get; set; }
+        private Dictionary<Tuple<IfcProfileDef, IfcAxis2Placement>, Geometry> Geometries { get; set; }
+        private Lookup<Geometry, Tuple<IfcProfileDef, IfcAxis2Placement>> GeometryLookup { get; set; }
         public bool AllowDuplicate { get; set; }
         public bool PrecisionReduce { get; set; }
 
@@ -22,7 +23,7 @@ namespace ThBIMServer.NTS
 
         }
 
-        public ThIFCNTSSpatialIndex(List<IfcProfileDef> profiles, bool precisionReduce = false, bool allowDuplicate = false)
+        public ThIFCNTSSpatialIndex(List<Tuple<IfcProfileDef, IfcAxis2Placement>> profiles, bool precisionReduce = false, bool allowDuplicate = false)
         {
             // 默认使用固定精度
             PrecisionReduce = precisionReduce;
@@ -40,29 +41,29 @@ namespace ThBIMServer.NTS
             Engine = null;
         }
 
-        private List<IfcProfileDef> CrossingFilter(List<IfcProfileDef> objs, IPreparedGeometry preparedGeometry)
+        private List<Tuple<IfcProfileDef, IfcAxis2Placement>> CrossingFilter(List<Tuple<IfcProfileDef, IfcAxis2Placement>> objs, IPreparedGeometry preparedGeometry)
         {
             return objs.Where(o => Intersects(preparedGeometry, o)).ToList();
         }
 
-        private List<IfcProfileDef> FenceFilter(List<IfcProfileDef> objs, IPreparedGeometry preparedGeometry)
+        private List<Tuple<IfcProfileDef, IfcAxis2Placement>> FenceFilter(List<Tuple<IfcProfileDef, IfcAxis2Placement>> objs, IPreparedGeometry preparedGeometry)
         {
             return objs.Where(o => Intersects(preparedGeometry, o)).ToList();
         }
 
-        private List<IfcProfileDef> WindowFilter(List<IfcProfileDef> objs, IPreparedGeometry preparedGeometry)
+        private List<Tuple<IfcProfileDef, IfcAxis2Placement>> WindowFilter(List<Tuple<IfcProfileDef, IfcAxis2Placement>> objs, IPreparedGeometry preparedGeometry)
         {
             return objs.Where(o => Contains(preparedGeometry, o)).ToList();
         }
 
-        private bool Contains(IPreparedGeometry preparedGeometry, IfcProfileDef entity)
+        private bool Contains(IPreparedGeometry preparedGeometry, Tuple<IfcProfileDef, IfcAxis2Placement> entity)
         {
-            return preparedGeometry.Contains(ToNTSGeometry(entity));
+            return preparedGeometry.Contains(ToNTSGeometry(entity.Item1, entity.Item2));
         }
 
-        public bool Intersects(IfcProfileDef entity, bool precisely = false)
+        public bool Intersects(Tuple<IfcProfileDef, IfcAxis2Placement> entity, bool precisely = false)
         {
-            var geometry = ToNTSPolygonalGeometry(entity);
+            var geometry = ToNTSPolygonalGeometry(entity.Item1, entity.Item2);
             var queriedObjs = Query(geometry.EnvelopeInternal);
 
             if (precisely == false)
@@ -75,28 +76,20 @@ namespace ThBIMServer.NTS
             return hasIntersection;
         }
 
-        private bool Intersects(IPreparedGeometry preparedGeometry, IfcProfileDef entity)
+        private bool Intersects(IPreparedGeometry preparedGeometry, Tuple<IfcProfileDef, IfcAxis2Placement> entity)
         {
-            return preparedGeometry.Intersects(ToNTSGeometry(entity));
+            return preparedGeometry.Intersects(ToNTSGeometry(entity.Item1, entity.Item2));
         }
 
-        private Geometry ToNTSGeometry(IfcProfileDef obj)
-        {
-            using (var ov = new ThIFCNTSFixedPrecision(PrecisionReduce))
-            {
-                return obj.ToNTSGeometry();
-            }
-        }
-
-        private Polygon ToNTSPolygonalGeometry(IfcProfileDef obj)
+        private Geometry ToNTSGeometry(IfcProfileDef obj, IfcAxis2Placement placement)
         {
             using (var ov = new ThIFCNTSFixedPrecision(PrecisionReduce))
             {
-                return obj.ToNTSPolygon();
+                return obj.ToNTSGeometry(placement);
             }
         }
 
-        private Polygon ToNTSPolygonalGeometry(IfcProfileDef obj, IfcCartesianPoint placement)
+        private Polygon ToNTSPolygonalGeometry(IfcProfileDef obj, IfcAxis2Placement placement)
         {
             using (var ov = new ThIFCNTSFixedPrecision(PrecisionReduce))
             {
@@ -109,14 +102,14 @@ namespace ThBIMServer.NTS
         /// </summary>
         /// <param name="adds"></param>
         /// <param name="removals"></param>
-        public void Update(List<IfcProfileDef> adds, List<IfcProfileDef> removals)
+        public void Update(List<Tuple<IfcProfileDef, IfcAxis2Placement>> adds, List<Tuple<IfcProfileDef, IfcAxis2Placement>> removals)
         {
             // 添加新的对象
             adds.ForEach(o =>
             {
                 if (!Geometries.ContainsKey(o))
                 {
-                    Geometries[o] = o.ToNTSPolygon();
+                    Geometries[o] = o.Item1.ToNTSPolygon(o.Item2);
                 }
             });
 
@@ -131,7 +124,7 @@ namespace ThBIMServer.NTS
 
             // 创建新的索引
             Engine = new STRtree<Geometry>();
-            GeometryLookup = (Lookup<Geometry, IfcProfileDef>)Geometries.ToLookup(p => p.Value, p => p.Key);
+            GeometryLookup = (Lookup<Geometry, Tuple<IfcProfileDef, IfcAxis2Placement>>)Geometries.ToLookup(p => p.Value, p => p.Key);
             foreach (var item in GeometryLookup)
             {
                 Engine.Insert(item.Key.EnvelopeInternal, item.Key);
@@ -141,10 +134,10 @@ namespace ThBIMServer.NTS
         /// <summary>
         /// 重置索引
         /// </summary>
-        public void Reset(List<IfcProfileDef> profiles)
+        public void Reset(List<Tuple<IfcProfileDef, IfcAxis2Placement>> profiles)
         {
-            Geometries = new Dictionary<IfcProfileDef, Geometry>();
-            Update(profiles, new List<IfcProfileDef>());
+            Geometries = new Dictionary<Tuple<IfcProfileDef, IfcAxis2Placement>, Geometry>();
+            Update(profiles, new List<Tuple<IfcProfileDef, IfcAxis2Placement>>());
         }
 
         /// <summary>
@@ -152,9 +145,9 @@ namespace ThBIMServer.NTS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public List<IfcProfileDef> SelectCrossingPolygon(IfcProfileDef entity, IfcCartesianPoint placement)
+        public List<Tuple<IfcProfileDef, IfcAxis2Placement>> SelectCrossingPolygon(Tuple<IfcProfileDef, IfcAxis2Placement> entity)
         {
-            var geometry = ToNTSPolygonalGeometry(entity, placement);
+            var geometry = ToNTSPolygonalGeometry(entity.Item1, entity.Item2);
             return CrossingFilter(
                 Query(geometry.EnvelopeInternal),
                 ThIFCNTSService.Instance.PreparedGeometryFactory.Create(geometry));
@@ -165,9 +158,9 @@ namespace ThBIMServer.NTS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public List<IfcProfileDef> SelectWindowPolygon(IfcProfileDef entity)
+        public List<Tuple<IfcProfileDef, IfcAxis2Placement>> SelectWindowPolygon(Tuple<IfcProfileDef, IfcAxis2Placement> entity)
         {
-            var geometry = ToNTSPolygonalGeometry(entity);
+            var geometry = ToNTSPolygonalGeometry(entity.Item1, entity.Item2);
             return WindowFilter(Query(geometry.EnvelopeInternal),
                 ThIFCNTSService.Instance.PreparedGeometryFactory.Create(geometry));
         }
@@ -177,16 +170,16 @@ namespace ThBIMServer.NTS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public List<IfcProfileDef> SelectFence(IfcProfileDef entity)
+        public List<Tuple<IfcProfileDef, IfcAxis2Placement>> SelectFence(Tuple<IfcProfileDef, IfcAxis2Placement> entity)
         {
-            var geometry = ToNTSGeometry(entity);
+            var geometry = ToNTSGeometry(entity.Item1, entity.Item2);
             return FenceFilter(Query(geometry.EnvelopeInternal),
                 ThIFCNTSService.Instance.PreparedGeometryFactory.Create(geometry));
         }
 
-        public List<IfcProfileDef> SelectAll()
+        public List<Tuple<IfcProfileDef, IfcAxis2Placement>> SelectAll()
         {
-            var objs = new List<IfcProfileDef>();
+            var objs = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
             foreach (var item in GeometryLookup)
             {
                 if (AllowDuplicate)
@@ -205,9 +198,9 @@ namespace ThBIMServer.NTS
             return objs;
         }
 
-        public List<IfcProfileDef> Query(Envelope envelope)
+        public List<Tuple<IfcProfileDef, IfcAxis2Placement>> Query(Envelope envelope)
         {
-            var objs = new List<IfcProfileDef>();
+            var objs = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
             var results = Engine.Query(envelope).ToList();
             foreach (var item in GeometryLookup.Where(o => results.Contains(o.Key)))
             {

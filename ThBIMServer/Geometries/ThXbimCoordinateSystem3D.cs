@@ -2,7 +2,7 @@
 using MathNet.Spatial.Euclidean;
 using MathNet.Numerics.LinearAlgebra.Double;
 
-namespace ThMEPIFC.Geometries
+namespace ThBIMServer.Geometries
 {
     public class ThXbimCoordinateSystem3D
     {

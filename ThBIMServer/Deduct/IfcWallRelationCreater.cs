@@ -1,15 +1,16 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using Xbim.Ifc;
 using Xbim.Ifc2x3.Kernel;
+using Xbim.Ifc2x3.ProfileResource;
+using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc2x3.GeometricConstraintResource;
 
 using ThBIMServer.NTS;
-using Xbim.Ifc4.SharedBldgElements;
-using Xbim.Ifc2x3.GeometryResource;
-using Xbim.Ifc2x3.GeometricConstraintResource;
 
 namespace ThBIMServer.Deduct
 {
@@ -36,13 +37,20 @@ namespace ThBIMServer.Deduct
 
                 var struWalls = walls.Where(o => struType.RelatedObjects.Contains(o)).ToList();
                 var archWalls = walls.Except(struWalls).ToList();
-                var archProfiles = archWalls.Select(o => (((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea)).ToList();
-                var spatialIndex = new ThIFCNTSSpatialIndex(archProfiles);
+                var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
+                archWalls.ForEach(o =>
+                {
+                    var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
+                    var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
+                    archProfileInfos.Add(Tuple.Create(profile, placement));
+                });
+
+                var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
                 struWalls.ForEach(struWall =>
                 {
                     var profile = ((IfcSweptAreaSolid)struWall.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcPlacement)((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement).Location;
-                    var filter = spatialIndex.SelectCrossingPolygon(profile, placement);
+                    var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
+                    var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
                     filter.ForEach(o =>
                     {
                         var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o)).FirstOrDefault();

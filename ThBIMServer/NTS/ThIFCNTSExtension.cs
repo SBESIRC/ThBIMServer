@@ -10,11 +10,11 @@ namespace ThBIMServer.NTS
 {
     public static class ThIFCNTSExtension
     {
-        public static Geometry ToNTSGeometry(this IfcProfileDef profile)
+        public static Geometry ToNTSGeometry(this IfcProfileDef profile, IfcAxis2Placement placement)
         {
             if (profile is IfcArbitraryClosedProfileDef closedProfile)
             {
-                return closedProfile.ToNTSPolygon();
+                return closedProfile.ToNTSPolygon(placement);
             }
             else
             {
@@ -22,15 +22,15 @@ namespace ThBIMServer.NTS
             }
         }
 
-        public static Polygon ToNTSPolygon(this IfcProfileDef profile)
+        public static Polygon ToNTSPolygon(this IfcProfileDef profile, IfcAxis2Placement placement)
         {
             if (profile is IfcArbitraryClosedProfileDef closedProfile)
             {
-                return closedProfile.OuterCurve.ToNTSPolygon();
+                return closedProfile.OuterCurve.ToNTSPolygon(placement);
             }
             else if (profile is IfcRectangleProfileDef rectangleProfile)
             {
-                return rectangleProfile.ToNTSPolygon();
+                return rectangleProfile.ToNTSPolygon(placement);
             }
             else
             {
@@ -38,23 +38,23 @@ namespace ThBIMServer.NTS
             }
         }
 
-        public static Polygon ToNTSPolygon(this IfcCurve curve)
+        public static Polygon ToNTSPolygon(this IfcCurve curve, IfcAxis2Placement placement)
         {
             //if (curve.Area() < 1e-6)
             //{
             //    return ThIFCNTSService.Instance.GeometryFactory.CreatePolygon();
             //}
-            var geometry = curve.ToNTSLineString();
+            var geometry = curve.ToNTSLineString(placement);
             return geometry.CreatePolygon();
         }
 
-        public static Polygon ToNTSPolygon(this IfcRectangleProfileDef rectangleProfile)
+        public static Polygon ToNTSPolygon(this IfcRectangleProfileDef rectangleProfile, IfcAxis2Placement placement)
         {
             //if (curve.Area() < 1e-6)
             //{
             //    return ThIFCNTSService.Instance.GeometryFactory.CreatePolygon();
             //}
-            var geometry = rectangleProfile.ToNTSLineString();
+            var geometry = rectangleProfile.ToNTSLineString(placement);
             return geometry.CreatePolygon();
         }
 
@@ -70,15 +70,15 @@ namespace ThBIMServer.NTS
             }
         }
 
-        public static LineString ToNTSLineString(this IfcCurve curve)
+        public static LineString ToNTSLineString(this IfcCurve curve, IfcAxis2Placement placement)
         {
             if (curve is IfcPolyline polyline)
             {
-                return polyline.ToNTSLineString();
+                return polyline.ToNTSLineString(placement);
             }
             else if (curve is IfcCompositeCurve compositeCurve)
             {
-                return compositeCurve.ToNTSLineString();
+                return compositeCurve.ToNTSLineString(placement);
             }
             else
             {
@@ -86,35 +86,33 @@ namespace ThBIMServer.NTS
             }
         }
 
-        public static LineString ToNTSLineString(this IfcPolyline polyline)
+        public static LineString ToNTSLineString(this IfcPolyline polyline, IfcAxis2Placement placement)
         {
             var points = new List<Coordinate>();
-            //var arcLength = ThCADCoreNTSService.Instance.ArcTessellationLength;
-            //var polyLine = poly.HasBulges ? poly.TessellatePolylineWithArc(arcLength) : poly;
+            var offset = (placement as IfcPlacement).Location.ToNTSCoordinate();
             for (int i = 0; i < polyline.Points.Count; i++)
             {
-                points.Add(polyline.Points[i].ToNTSCoordinate());
+                points.Add(polyline.Points[i].ToNTSCoordinate().Offset(offset));
             }
-            points.Add(polyline.Points[0].ToNTSCoordinate());
+            points.Add(polyline.Points[0].ToNTSCoordinate().Offset(offset));
 
             return points.CreateLineString();
         }
 
-        public static LineString ToNTSLineString(this IfcCompositeCurve compositeCurve)
+        public static LineString ToNTSLineString(this IfcCompositeCurve compositeCurve, IfcAxis2Placement placement)
         {
             var points = new List<Coordinate>();
-            //var arcLength = ThCADCoreNTSService.Instance.ArcTessellationLength;
-            //var polyLine = poly.HasBulges ? poly.TessellatePolylineWithArc(arcLength) : poly;
+            var offset = (placement as IfcPlacement).Location.ToNTSCoordinate();
             for (int i = 0; i < compositeCurve.Segments.Count; i++)
             {
-                points.Add((compositeCurve.Segments[i].ParentCurve as IfcPolyline).Points[0].ToNTSCoordinate());
+                points.Add((compositeCurve.Segments[i].ParentCurve as IfcPolyline).Points[0].ToNTSCoordinate().Offset(offset));
             }
-            points.Add((compositeCurve.Segments[0].ParentCurve as IfcPolyline).Points[0].ToNTSCoordinate());
+            points.Add((compositeCurve.Segments[0].ParentCurve as IfcPolyline).Points[0].ToNTSCoordinate().Offset(offset));
 
             return points.CreateLineString();
         }
 
-        public static LineString ToNTSLineString(this IfcRectangleProfileDef rectangleProfile)
+        public static LineString ToNTSLineString(this IfcRectangleProfileDef rectangleProfile, IfcAxis2Placement placement)
         {
             var points = new List<Coordinate>();
             var location = new Coordinate(rectangleProfile.Position.Location.X.MakePrecise(), rectangleProfile.Position.Location.Y.MakePrecise());
@@ -122,11 +120,12 @@ namespace ThBIMServer.NTS
             var vector2 = new Vector2D(rectangleProfile.Position.P[1].X.MakePrecise(), rectangleProfile.Position.P[1].Y.MakePrecise());
             var xDim = ((double)rectangleProfile.XDim.Value).MakePrecise();
             var yDim = ((double)rectangleProfile.YDim.Value).MakePrecise();
-            points.Add(ThNTSOperation.Addition(location, vector1, vector2, xDim, yDim));
-            points.Add(ThNTSOperation.Addition(location, -vector1, vector2, xDim, yDim));
-            points.Add(ThNTSOperation.Addition(location, -vector1, -vector2, xDim, yDim));
-            points.Add(ThNTSOperation.Addition(location, vector1, -vector2, xDim, yDim));
-            points.Add(ThNTSOperation.Addition(location, vector1, vector2, xDim, yDim));
+            var offset = (placement as IfcPlacement).Location.ToNTSCoordinate();
+            points.Add(ThNTSOperation.Addition(location, vector1, vector2, xDim, yDim).Offset(offset));
+            points.Add(ThNTSOperation.Addition(location, -vector1, vector2, xDim, yDim).Offset(offset));
+            points.Add(ThNTSOperation.Addition(location, -vector1, -vector2, xDim, yDim).Offset(offset));
+            points.Add(ThNTSOperation.Addition(location, vector1, -vector2, xDim, yDim).Offset(offset));
+            points.Add(ThNTSOperation.Addition(location, vector1, vector2, xDim, yDim).Offset(offset));
 
             return points.CreateLineString();
         }
@@ -201,6 +200,11 @@ namespace ThBIMServer.NTS
                 // 首尾端点不一致的情况
                 return ThIFCNTSService.Instance.GeometryFactory.CreateLineString(points.ToArray());
             }
+        }
+
+        private static Coordinate Offset(this Coordinate first, Coordinate second)
+        {
+            return new Coordinate(first.X + second.X, first.Y + second.Y);
         }
     }
 }

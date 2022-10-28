@@ -17,11 +17,10 @@ using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.RepresentationResource;
 
-using ThMEPIFC.Geometry;
-using ThBIMServer.Ifc2x3;
-using ThBIMServer.Geometry;
+using ThBIMServer.NTS;
+using ThBIMServer.Geometries;
 
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public partial class ThProtoBuf2IFC2x3Factory
     {
@@ -847,7 +846,7 @@ namespace ThMEPIFC.Ifc2x3
                     });
                     if (componentData.InstanceName != null)
                     {
-                        var info = componentData.InstanceName.Replace(" ","").Replace("x",",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
+                        var info = componentData.InstanceName.Replace(" ", "").Replace("x", ",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
                         info = "su," + info;
                         model.Instances.New<IfcRelDefinesByProperties>(rel =>
                         {

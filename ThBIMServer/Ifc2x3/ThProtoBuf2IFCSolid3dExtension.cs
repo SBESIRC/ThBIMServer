@@ -1,10 +1,10 @@
-﻿using Xbim.Ifc;
-using Xbim.Common.Geometry;
-using System.Collections.Generic;
-using Xbim.Ifc2x3.ProfileResource;
-using ThBIMServer.Ifc2x3;
+﻿using System.Collections.Generic;
 
-namespace ThMEPIFC.Ifc2x3
+using Xbim.Ifc;
+using Xbim.Common.Geometry;
+using Xbim.Ifc2x3.ProfileResource;
+
+namespace ThBIMServer.Ifc2x3
 {
     public static class ThProtoBuf2IFCSolid3dExtension
     {

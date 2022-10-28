@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Security.Principal;
 using System.Collections.Generic;
-using ThMEPIFC.Ifc2x3;
+using ThBIMServer.Ifc2x3;
 
 namespace ThBIMServer
 {

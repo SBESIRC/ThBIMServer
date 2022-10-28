@@ -1,4 +1,4 @@
-﻿namespace ThMEPIFC.Geometries
+﻿namespace ThBIMServer.Geometries
 {
     public class ThXbimCommon
     {
