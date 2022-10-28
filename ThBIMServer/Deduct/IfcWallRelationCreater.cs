@@ -53,7 +53,7 @@ namespace ThBIMServer.Deduct
                     var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
                     filter.ForEach(o =>
                     {
-                        var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o)).FirstOrDefault();
+                        var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o.Item1)).FirstOrDefault();
                         if (crossWall != null)
                         {
                             CreateRelation(model, crossWall, struWall);

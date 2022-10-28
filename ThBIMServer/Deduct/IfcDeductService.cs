@@ -8,7 +8,6 @@ using Xbim.Ifc2x3.Kernel;
 using ThBIMServer.Ifc2x3;
 using ThBIMServer.Ifc4;
 using ThBIMServer.ModelMerge;
-using NetTopologySuite.Operation.Valid;
 
 namespace ThBIMServer.Deduct
 {
