@@ -7,6 +7,7 @@ using Xbim.Ifc4.ProfileResource;
 using Xbim.Ifc4.GeometryResource;
 using Xbim.Ifc4.SharedBldgElements;
 using Xbim.Ifc4.GeometricModelResource;
+using Xbim.Ifc4.GeometricConstraintResource;
 
 namespace ThBIMServer.Ifc4
 {
@@ -109,6 +110,12 @@ namespace ThBIMServer.Ifc4
                     }
                     newWall.BuildElement.Length = rectangleProfile.XDim;
                     newWall.BuildElement.Width = rectangleProfile.YDim;
+                    newWall.BuildElement.Origin = new ThTCHPoint3d 
+                    { 
+                        X = ((IfcPlacement)((IfcLocalPlacement)ifcWall.ObjectPlacement).RelativePlacement).Location.X,
+                        Y = ((IfcPlacement)((IfcLocalPlacement)ifcWall.ObjectPlacement).RelativePlacement).Location.Y,
+                        Z = ((IfcPlacement)((IfcLocalPlacement)ifcWall.ObjectPlacement).RelativePlacement).Location.Z,
+                    };
                 }
             }
 

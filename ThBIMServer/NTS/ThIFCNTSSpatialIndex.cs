@@ -5,6 +5,7 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.Index.Strtree;
 using NetTopologySuite.Geometries.Prepared;
 using Xbim.Ifc2x3.ProfileResource;
+using Xbim.Ifc2x3.GeometryResource;
 
 namespace ThBIMServer.NTS
 {
@@ -95,6 +96,14 @@ namespace ThBIMServer.NTS
             }
         }
 
+        private Polygon ToNTSPolygonalGeometry(IfcProfileDef obj, IfcCartesianPoint placement)
+        {
+            using (var ov = new ThIFCNTSFixedPrecision(PrecisionReduce))
+            {
+                return obj.ToNTSPolygon(placement);
+            }
+        }
+
         /// <summary>
         /// 更新索引
         /// </summary>
@@ -143,9 +152,9 @@ namespace ThBIMServer.NTS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public List<IfcProfileDef> SelectCrossingPolygon(IfcProfileDef entity)
+        public List<IfcProfileDef> SelectCrossingPolygon(IfcProfileDef entity, IfcCartesianPoint placement)
         {
-            var geometry = ToNTSPolygonalGeometry(entity);
+            var geometry = ToNTSPolygonalGeometry(entity, placement);
             return CrossingFilter(
                 Query(geometry.EnvelopeInternal),
                 ThIFCNTSService.Instance.PreparedGeometryFactory.Create(geometry));

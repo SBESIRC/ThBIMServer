@@ -95,6 +95,7 @@ namespace ThBIMServer.NTS
             {
                 points.Add(polyline.Points[i].ToNTSCoordinate());
             }
+            points.Add(polyline.Points[0].ToNTSCoordinate());
 
             return points.CreateLineString();
         }
@@ -108,6 +109,7 @@ namespace ThBIMServer.NTS
             {
                 points.Add((compositeCurve.Segments[i].ParentCurve as IfcPolyline).Points[0].ToNTSCoordinate());
             }
+            points.Add((compositeCurve.Segments[0].ParentCurve as IfcPolyline).Points[0].ToNTSCoordinate());
 
             return points.CreateLineString();
         }
@@ -122,8 +124,9 @@ namespace ThBIMServer.NTS
             var yDim = ((double)rectangleProfile.YDim.Value).MakePrecise();
             points.Add(ThNTSOperation.Addition(location, vector1, vector2, xDim, yDim));
             points.Add(ThNTSOperation.Addition(location, -vector1, vector2, xDim, yDim));
-            points.Add(ThNTSOperation.Addition(location, vector1, -vector2, xDim, yDim));
             points.Add(ThNTSOperation.Addition(location, -vector1, -vector2, xDim, yDim));
+            points.Add(ThNTSOperation.Addition(location, vector1, -vector2, xDim, yDim));
+            points.Add(ThNTSOperation.Addition(location, vector1, vector2, xDim, yDim));
 
             return points.CreateLineString();
         }

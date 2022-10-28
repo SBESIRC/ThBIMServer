@@ -7,6 +7,9 @@ using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
 
 using ThBIMServer.NTS;
+using Xbim.Ifc4.SharedBldgElements;
+using Xbim.Ifc2x3.GeometryResource;
+using Xbim.Ifc2x3.GeometricConstraintResource;
 
 namespace ThBIMServer.Deduct
 {
@@ -38,7 +41,8 @@ namespace ThBIMServer.Deduct
                 struWalls.ForEach(struWall =>
                 {
                     var profile = ((IfcSweptAreaSolid)struWall.Representation.Representations[0].Items[0]).SweptArea;
-                    var filter = spatialIndex.SelectCrossingPolygon(profile);
+                    var placement = ((IfcPlacement)((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement).Location;
+                    var filter = spatialIndex.SelectCrossingPolygon(profile, placement);
                     filter.ForEach(o =>
                     {
                         var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o)).FirstOrDefault();
