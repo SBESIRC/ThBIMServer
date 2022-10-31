@@ -11,6 +11,7 @@ using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.GeometricConstraintResource;
 
 using ThBIMServer.NTS;
+using ThBIMServer.Ifc2x3;
 
 namespace ThBIMServer.Deduct
 {
@@ -61,12 +62,12 @@ namespace ThBIMServer.Deduct
                     });
                 });
             }
-
         }
 
         private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall)
         {
-            //
+            var ifcHole = ThIFC2x32IFC2x3Factory.CreateHole(model, archWall, struWall);
+            ThIFC2x32IFC2x3Factory.BuildRelationship(model, archWall, struWall, ifcHole);
         }
     }
 }

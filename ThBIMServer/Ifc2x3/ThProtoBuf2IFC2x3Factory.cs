@@ -22,7 +22,7 @@ using ThBIMServer.Geometries;
 
 namespace ThBIMServer.Ifc2x3
 {
-    public partial class ThProtoBuf2IFC2x3Factory
+    public static class ThProtoBuf2IFC2x3Factory
     {
         private static XbimVector3D ZAxis => new XbimVector3D(0, 0, 1);
 
@@ -201,7 +201,7 @@ namespace ThBIMServer.Ifc2x3
             }
         }
 
-        public static IfcProductDefinitionShape CreateProductDefinitionShape(IfcStore model, IfcExtrudedAreaSolid solid)
+        public static IfcProductDefinitionShape CreateProductDefinitionShape(this IfcStore model, IfcExtrudedAreaSolid solid)
         {
             var shape = ThIFC2x3Factory.CreateSweptSolidBody(model, solid);
             return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
