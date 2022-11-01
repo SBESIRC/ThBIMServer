@@ -201,9 +201,9 @@ namespace ThBIMServer.Ifc2x3
             }
         }
 
-        public static IfcProductDefinitionShape CreateProductDefinitionShape(this IfcStore model, IfcExtrudedAreaSolid solid)
+        public static IfcProductDefinitionShape CreateProductDefinitionShape(this IfcStore model, IfcRepresentationItem solid)
         {
-            var shape = ThIFC2x3Factory.CreateSweptSolidBody(model, solid);
+            var shape = ThIFC2x3Factory.CreateSolidClippingBody(model, solid);
             return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
         }
 

@@ -64,7 +64,7 @@ namespace ThBIMServer.Deduct
             }
         }
 
-        public void CreateRelation1(IfcStore model)
+        public void CreateRelationInSites(IfcStore model)
         {
             var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
             var struStorey = project.Sites.First().Buildings.First().BuildingStoreys.ToList().First();
@@ -91,20 +91,33 @@ namespace ThBIMServer.Deduct
             var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
             struWalls.ForEach(struWall =>
             {
-                if (struWall.Representation.Representations[0].Items[0] is IfcSweptAreaSolid sweptArea)
+                IfcProfileDef profile;
+                var solid = struWall.Representation.Representations[0].Items[0];
+                if (solid is IfcSweptAreaSolid sweptArea)
                 {
-
+                    profile = sweptArea.SweptArea;
+                }
+                else if (solid is IfcBooleanClippingResult clippingResult)
+                {
+                    //profile = clippingResult.FirstOperand;
+                    if (clippingResult.FirstOperand is IfcSweptAreaSolid e)
+                    {
+                        profile = e.SweptArea;
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
                 else
                 {
                     return;
                 }
-                var profile = ((IfcSweptAreaSolid)struWall.Representation.Representations[0].Items[0]).SweptArea;
                 var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
                 var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
                 filter.ForEach(o =>
                 {
-                    var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o.Item1)).FirstOrDefault();
+                    var crossWall = archWalls.Where(archWall => ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
                     if (crossWall != null)
                     {
                         CreateRelation(model, crossWall, struWall);

@@ -28,7 +28,7 @@ namespace ThBIMServer.Ifc2x3
                 ret.Description = sourceWall.Description.ToString();
 
                 //model as a swept area solid
-                var body = model.ToIfcSolid(sourceWall);
+                var body = model.ToIfcRepresentationItem(sourceWall);
 
                 //Create a Definition shape to hold the geometry
                 var modelContext = model.Instances.OfType<IfcGeometricRepresentationContext>().FirstOrDefault();
@@ -72,8 +72,8 @@ namespace ThBIMServer.Ifc2x3
                 });
 
                 //create representation
-                var solid = model.ToIfcSolid(struWall);
-                ret.Representation = model.CreateProductDefinitionShape(solid);
+                var body = model.ToIfcRepresentationItem(struWall);
+                ret.Representation = model.CreateProductDefinitionShape(body);
 
                 //object placement
                 ret.ObjectPlacement = ToIfcLocalPlacement(model, struWall.ObjectPlacement);
@@ -101,11 +101,16 @@ namespace ThBIMServer.Ifc2x3
             }
         }
 
-        private static IfcExtrudedAreaSolid ToIfcSolid(this IfcStore model, IfcWall struWall)
+        private static IfcRepresentationItem ToIfcRepresentationItem(this IfcStore model, IfcWall struWall)
         {
-            if (struWall.Representation.Representations.First().Items[0] is IfcExtrudedAreaSolid areaSolid)
+            var solid = struWall.Representation.Representations.First().Items[0];
+            if (solid is IfcExtrudedAreaSolid areaSolid)
             {
                 return model.ToIfcExtrudedAreaSolid(areaSolid);
+            }
+            else if (solid is IfcBooleanClippingResult clippingResult)
+            {
+                return model.ToIfcBooleanClippingResult(clippingResult);
             }
             else
             {
@@ -141,6 +146,52 @@ namespace ThBIMServer.Ifc2x3
             {
                 newSolid.SweptArea = model.ToIfcRectangleProfileDef(rectangleProfile);
             }
+
+            return newSolid;
+        }
+
+        private static IfcBooleanClippingResult ToIfcBooleanClippingResult(this IfcStore model, IfcBooleanClippingResult clippingResult)
+        {
+            var newSolid = model.Instances.New<IfcBooleanClippingResult>(s =>
+            {
+                s.Operator = clippingResult.Operator;
+            });
+
+            if (clippingResult.FirstOperand is IfcExtrudedAreaSolid extrudedAreaSolid)
+            {
+                newSolid.FirstOperand = model.ToIfcExtrudedAreaSolid(extrudedAreaSolid);
+            }
+            if (clippingResult.SecondOperand is IfcHalfSpaceSolid halfSpaceSolid)
+            {
+                newSolid.SecondOperand = model.ToIfcHalfSpaceSolid(halfSpaceSolid);
+            }
+
+            return newSolid;
+        }
+
+        private static IfcHalfSpaceSolid ToIfcHalfSpaceSolid(this IfcStore model, IfcHalfSpaceSolid halfSpaceSolid)
+        {
+            var newSolid = model.Instances.New<IfcHalfSpaceSolid>(s =>
+            {
+                //s.Depth = areaSolid.Depth;
+                //s.ExtrudedDirection = model.ToIfcDirection(new XbimVector3D(0, 0, 1));
+                //s.Position = model.ToIfcAxis2Placement3D(XbimPoint3D.Zero);
+            });
+
+            if (halfSpaceSolid.BaseSurface is IfcPlane plane)
+            {
+                newSolid.BaseSurface = model.ToIfcPlane(plane.Position);
+            }
+
+            return newSolid;
+        }
+
+        private static IfcPlane ToIfcPlane(this IfcStore model, IfcAxis2Placement placement)
+        {
+            var newSolid = model.Instances.New<IfcPlane>(p =>
+            {
+                p.Position = model.ToIfcAxis2Placement3D(placement);
+            });
 
             return newSolid;
         }
@@ -223,10 +274,17 @@ namespace ThBIMServer.Ifc2x3
 
         public static IfcDirection ToIfcDirection(this IfcStore model, IfcDirection vector)
         {
-            return model.Instances.New<IfcDirection>(d =>
+            if (vector == null)
             {
-                d.SetXYZ(vector.X, vector.Y, vector.Z);
-            });
+                return null;
+            }
+            else
+            {
+                return model.Instances.New<IfcDirection>(d =>
+                {
+                    d.SetXYZ(vector.X, vector.Y, vector.Z);
+                });
+            }
         }
 
         private static IfcRelDefinesByProperties CloneAndCreateNew(this IfcRelDefinesByProperties property, IfcStore model)

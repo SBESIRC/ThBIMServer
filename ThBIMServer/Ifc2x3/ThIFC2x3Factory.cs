@@ -72,7 +72,7 @@ namespace ThBIMServer.Ifc2x3
             return null;
         }
 
-        public static IfcShapeRepresentation CreateSolidClippingBody(IfcStore model, IfcBooleanClippingResult item)
+        public static IfcShapeRepresentation CreateSolidClippingBody(IfcStore model, IfcRepresentationItem item)
         {
             var context = GetGeometricRepresentationContext(model);
             if (context != null)
