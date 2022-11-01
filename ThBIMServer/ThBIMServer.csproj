@@ -48,7 +48,9 @@
     <Compile Include="Data\ThCircleLableGroupData.cs" />
     <Compile Include="Data\ThDimensionGroupData.cs" />
     <Compile Include="Data\ThGridLineSyetemData.cs" />
+    <Compile Include="Data\ThSUBuildingData.cs" />
     <Compile Include="Data\ThSUBuildingElementData.cs" />
+    <Compile Include="Data\ThSUBuildingStoreyData.cs" />
     <Compile Include="Data\ThSUCompDefinitionData.cs" />
     <Compile Include="Data\ThSUComponentData.cs" />
     <Compile Include="Data\ThSUFaceBrepData.cs" />

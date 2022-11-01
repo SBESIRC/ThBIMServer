@@ -99,27 +99,38 @@ namespace ThMEPIFC.Ifc2x3
             var SUIsFaceMesh = project.IsFaceMesh;
             if (model != null)
             {
+                var storeys = new List<IfcBuildingStorey>();
                 // 虚拟set
                 var site = ThProtoBuf2IFC2x3Factory.CreateSite(model);
+                //var building = ThProtoBuf2IFC2x3Factory.CreateBuilding(model, site, project.Building.Root.Name);
                 var building = ThProtoBuf2IFC2x3Factory.CreateBuilding(model, site, project.Root.Name + "Building");
-                var storey = ThProtoBuf2IFC2x3Factory.CreateStorey(model, building, "1F");
                 var definitions = project.Definitions;
-                var suElements = new List<IfcBuildingElement>();
-                foreach (var element in project.Buildings)
+                foreach (var storey in project.Building.Storeys)
                 {
-                    var def = definitions[element.Component.DefinitionIndex];
-                    IfcBuildingElement ifcBuildingElement;
-                    if (SUIsFaceMesh)
+                    if (storey.Buildings.Count > 0)
                     {
-                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElementWithSUMesh(model, def, element.Component);
+                        var ifcStorey = ThProtoBuf2IFC2x3Factory.CreateStorey(model, building, storey.Number.ToString());
+                        storeys.Add(ifcStorey);
+                        var suElements = new List<IfcBuildingElement>();
+                        foreach (var element in storey.Buildings)
+                        {
+                            var def = definitions[element.Component.DefinitionIndex];
+                            IfcBuildingElement ifcBuildingElement;
+                            if (SUIsFaceMesh)
+                            {
+                                ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElementWithSUMesh(model, def, element.Component);
+                            }
+                            else
+                            {
+                                ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(model, def, element.Component);
+                            }
+                            suElements.Add(ifcBuildingElement);
+                        }
+                        ThProtoBuf2IFC2x3Factory.RelContainsSUElements2Storey(model, suElements, ifcStorey);
                     }
-                    else
-                    {
-                        ifcBuildingElement = ThProtoBuf2IFC2x3Factory.CreatedSUElement(model, def, element.Component);
-                    }
-                    suElements.Add(ifcBuildingElement);
                 }
-                ThProtoBuf2IFC2x3Factory.RelContainsSUElements2Storey(model, suElements, storey);
+                // IfcRelAggregates 关系
+                ThProtoBuf2IFC2x3RelAggregatesFactory.Create(model, building, storeys);
             }
         }
 

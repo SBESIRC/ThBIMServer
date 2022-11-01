@@ -210,6 +210,8 @@ namespace ThBIMServer
             // 保存数据
             if (null != suProject)
             {
+                fileName = suProject.Root.Name + ".ifc";
+                ifcFilePath = Path.Combine(Path.GetTempPath(), fileName);
                 var sw = new Stopwatch();
                 sw.Start();
                 var Model = ThProtoBuf2IFC2x3Factory.CreateAndInitModel("ThSU2IFCProject", suProject.Root.GlobalId);
@@ -229,11 +231,18 @@ namespace ThBIMServer
             // 发送文件
             if (File.Exists(ifcFilePath))
             {
-                using (var pipeClient = new NamedPipeClientStream(".", "THIFCFILE2P3DPIE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                try
                 {
-                    pipeClient.Connect(5000);
-                    var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
-                    pipeClient.Write(bytes, 0, bytes.Length);
+                    using (var pipeClient = new NamedPipeClientStream(".", "THIFCFILE2P3DPIE", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                    {
+                        pipeClient.Connect(5000);
+                        var bytes = Encoding.UTF8.GetBytes(ifcFilePath);
+                        pipeClient.Write(bytes, 0, bytes.Length);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("未正确连接到Viewer。");
                 }
             }
 

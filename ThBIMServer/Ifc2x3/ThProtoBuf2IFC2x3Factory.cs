@@ -195,11 +195,6 @@ namespace ThMEPIFC.Ifc2x3
                     s.ObjectPlacement = model.ToIfcLocalPlacement(building.ObjectPlacement);
                     s.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
-                // setup aggregation relationship
-                var ifcRel = model.Instances.New<IfcRelAggregates>();
-                ifcRel.RelatingObject = building;
-                ifcRel.RelatedObjects.Add(ret);
-
                 txn.Commit();
                 return ret;
             }
