@@ -67,43 +67,50 @@ namespace ThBIMServer.Deduct
         public void CreateRelationInSites(IfcStore model)
         {
             var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
-            var struStorey = project.Sites.First().Buildings.First().BuildingStoreys.ToList().First();
-            var archStorey = project.Sites.Last().Buildings.First().BuildingStoreys.ToList().First();
-            var struWalls = new List<IfcWall>();
-            foreach (var r in struStorey.ContainsElements)
+            var struStoreys = project.Sites.First().Buildings.First().BuildingStoreys.ToList();
+            foreach (var archStorey in project.Sites.Last().Buildings.First().BuildingStoreys.ToList())
             {
-                struWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
-            }
-            var archWalls = new List<IfcWall>();
-            foreach (var r in archStorey.ContainsElements)
-            {
-                archWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
-            }
-
-            var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
-            archWalls.ForEach(o =>
-            {
-                var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
-                var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
-                archProfileInfos.Add(Tuple.Create(profile, placement));
-            });
-
-            var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
-            struWalls.ForEach(struWall =>
-            {
-                var solid = struWall.Representation.Representations[0].Items[0];
-                var profile = GetIfcProfileDef(solid);
-                var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
-                var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
-                filter.ForEach(o =>
+                var struStorey = struStoreys.FirstOrDefault(o => StoreyCompare(o.Name.Value, archStorey.Name.Value));
+                if (struStorey != null)
                 {
-                    var crossWall = archWalls.Where(archWall => ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
-                    if (crossWall != null)
-                    {
-                        CreateRelation(model, crossWall, struWall);
-                    }
+                    continue;
+                }
+                var struWalls = new List<IfcWall>();
+                foreach (var r in struStorey.ContainsElements)
+                {
+                    struWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
+                }
+                var archWalls = new List<IfcWall>();
+                foreach (var r in archStorey.ContainsElements)
+                {
+                    archWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
+                }
+
+                var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
+                archWalls.ForEach(o =>
+                {
+                    var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
+                    var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
+                    archProfileInfos.Add(Tuple.Create(profile, placement));
                 });
-            });
+
+                var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
+                struWalls.ForEach(struWall =>
+                {
+                    var solid = struWall.Representation.Representations[0].Items[0];
+                    var profile = GetIfcProfileDef(solid);
+                    var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
+                    var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
+                    filter.ForEach(o =>
+                    {
+                        var crossWall = archWalls.Where(archWall => ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
+                        if (crossWall != null)
+                        {
+                            CreateRelation(model, crossWall, struWall);
+                        }
+                    });
+                });
+            }
         }
 
         private IfcProfileDef GetIfcProfileDef(IfcRepresentationItem solid)
@@ -133,6 +140,11 @@ namespace ThBIMServer.Deduct
         {
             var ifcHole = ThIFC2x32IFC2x3Factory.CreateHole(model, struWall);
             ThIFC2x32IFC2x3Factory.BuildRelationship(model, archWall, struWall, ifcHole);
+        }
+
+        private bool StoreyCompare(Xbim.Ifc4.MeasureResource.IfcLabel? str1, string str2)
+        {
+            return str1 == str2 || str1 == str2 + "F" || str1 + "F" == str2;
         }
     }
 }
