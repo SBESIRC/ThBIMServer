@@ -91,28 +91,8 @@ namespace ThBIMServer.Deduct
             var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
             struWalls.ForEach(struWall =>
             {
-                IfcProfileDef profile;
                 var solid = struWall.Representation.Representations[0].Items[0];
-                if (solid is IfcSweptAreaSolid sweptArea)
-                {
-                    profile = sweptArea.SweptArea;
-                }
-                else if (solid is IfcBooleanClippingResult clippingResult)
-                {
-                    //profile = clippingResult.FirstOperand;
-                    if (clippingResult.FirstOperand is IfcSweptAreaSolid e)
-                    {
-                        profile = e.SweptArea;
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    return;
-                }
+                var profile = GetIfcProfileDef(solid);
                 var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
                 var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
                 filter.ForEach(o =>
@@ -124,6 +104,29 @@ namespace ThBIMServer.Deduct
                     }
                 });
             });
+        }
+
+        private IfcProfileDef GetIfcProfileDef(IfcRepresentationItem solid)
+        {
+            if (solid is IfcSweptAreaSolid sweptArea)
+            {
+                return sweptArea.SweptArea;
+            }
+            else if (solid is IfcBooleanClippingResult clippingResult)
+            {
+                if (clippingResult.FirstOperand is IfcSweptAreaSolid e)
+                {
+                    return e.SweptArea;
+                }
+                else
+                {
+                    return GetIfcProfileDef(clippingResult.FirstOperand as IfcRepresentationItem);
+                }
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall)

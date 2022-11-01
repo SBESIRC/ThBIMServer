@@ -104,6 +104,11 @@ namespace ThBIMServer.Ifc2x3
         private static IfcRepresentationItem ToIfcRepresentationItem(this IfcStore model, IfcWall struWall)
         {
             var solid = struWall.Representation.Representations.First().Items[0];
+            return model.ToIfcRepresentationItem(solid);
+        }
+
+        private static IfcRepresentationItem ToIfcRepresentationItem(this IfcStore model, IfcRepresentationItem solid)
+        {
             if (solid is IfcExtrudedAreaSolid areaSolid)
             {
                 return model.ToIfcExtrudedAreaSolid(areaSolid);
@@ -161,6 +166,10 @@ namespace ThBIMServer.Ifc2x3
             {
                 newSolid.FirstOperand = model.ToIfcExtrudedAreaSolid(extrudedAreaSolid);
             }
+            else if(clippingResult.FirstOperand is IfcBooleanClippingResult result)
+            {
+                newSolid.FirstOperand = model.ToIfcBooleanClippingResult(result);
+            }
             if (clippingResult.SecondOperand is IfcHalfSpaceSolid halfSpaceSolid)
             {
                 newSolid.SecondOperand = model.ToIfcHalfSpaceSolid(halfSpaceSolid);
@@ -173,9 +182,6 @@ namespace ThBIMServer.Ifc2x3
         {
             var newSolid = model.Instances.New<IfcHalfSpaceSolid>(s =>
             {
-                //s.Depth = areaSolid.Depth;
-                //s.ExtrudedDirection = model.ToIfcDirection(new XbimVector3D(0, 0, 1));
-                //s.Position = model.ToIfcAxis2Placement3D(XbimPoint3D.Zero);
             });
 
             if (halfSpaceSolid.BaseSurface is IfcPlane plane)
