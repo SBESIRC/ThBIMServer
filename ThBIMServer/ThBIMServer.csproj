@@ -80,6 +80,8 @@
     <Compile Include="Data\ThTCHWindowData.cs" />
     <Compile Include="Deduct\IfcWallRelationCreater.cs" />
     <Compile Include="Ifc2x3\ThIFC2x32IFC2x3Factory.cs" />
+    <Compile Include="Ifc4\ThIFC42IFC2x3Factory.cs" />
+    <Compile Include="Ifc4\ThIFC4Factory.cs" />
     <Compile Include="NTS\ThIFCNTSFixedPrecision.cs" />
     <Compile Include="NTS\ThNTSOperation.cs" />
     <Compile Include="NTS\ThTCHNTSExtension.cs" />

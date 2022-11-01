@@ -1,21 +1,67 @@
 ﻿using System;
 using System.Linq;
-using System.Xml.Linq;
-using Xbim.Common.Geometry;
+
 using Xbim.Ifc;
-using Xbim.Ifc2x3.GeometricConstraintResource;
-using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc2x3.Kernel;
+using Xbim.Common.Geometry;
+using Xbim.Ifc2x3.UtilityResource;
+using Xbim.Ifc2x3.MeasureResource;
+using Xbim.Ifc2x3.ProfileResource;
 using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.ProductExtension;
-using Xbim.Ifc2x3.ProfileResource;
+using Xbim.Ifc2x3.PropertyResource;
 using Xbim.Ifc2x3.SharedBldgElements;
-using Xbim.Ifc2x3.UtilityResource;
+using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc2x3.RepresentationResource;
+using Xbim.Ifc2x3.GeometricConstraintResource;
 
 namespace ThBIMServer.Ifc2x3
 {
     public static class ThIFC2x32IFC2x3Factory
     {
-        public static IfcOpeningElement CreateHole(IfcStore model, IfcWall archWall, IfcWall struWall)
+        public static IfcWall CloneAndCreateNew(this IfcWall sourceWall, IfcStore model)
+        {
+            using (var txn = model.BeginTransaction("Create Wall"))
+            {
+                var ret = model.Instances.New<IfcWall>();
+                ret.Name = sourceWall.Name.ToString();
+                ret.Description = sourceWall.Description.ToString();
+
+                //model as a swept area solid
+                var body = model.ToIfcSolid(sourceWall);
+
+                //Create a Definition shape to hold the geometry
+                var modelContext = model.Instances.OfType<IfcGeometricRepresentationContext>().FirstOrDefault();
+                var shape = model.Instances.New<IfcShapeRepresentation>();
+                shape.ContextOfItems = modelContext;
+                shape.RepresentationType = "SurfaceModel";
+                shape.RepresentationIdentifier = "Body";
+                shape.Items.Add(body);
+
+                //Create a Product Definition and add the model geometry to the wall
+                var rep = model.Instances.New<IfcProductDefinitionShape>();
+                rep.Representations.Add(shape);
+                ret.Representation = rep;
+
+                //now place the wall into the model
+                var lp = model.Instances.New<IfcLocalPlacement>();
+                var ax3D = model.ToIfcAxis2Placement3D((sourceWall.ObjectPlacement as IfcLocalPlacement).RelativePlacement);
+                lp.RelativePlacement = ax3D;
+                ret.ObjectPlacement = lp;
+
+                // add properties
+                var property = sourceWall.Model.Instances.OfType<IfcRelDefinesByProperties>().FirstOrDefault(o => o.RelatedObjects.Contains(sourceWall));
+                if (property != null)
+                {
+                    var ifcRelDefinesByProperties = property.CloneAndCreateNew(model);
+                    ifcRelDefinesByProperties.RelatedObjects.Add(ret);
+                }
+                txn.Commit();
+                return ret;
+            }
+        }
+
+        public static IfcOpeningElement CreateHole(IfcStore model, IfcWall struWall)
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
@@ -78,7 +124,7 @@ namespace ThBIMServer.Ifc2x3
             });
         }
 
-        public static IfcExtrudedAreaSolid ToIfcExtrudedAreaSolid(this IfcStore model, IfcExtrudedAreaSolid areaSolid)
+        private static IfcExtrudedAreaSolid ToIfcExtrudedAreaSolid(this IfcStore model, IfcExtrudedAreaSolid areaSolid)
         {
             var newSolid = model.Instances.New<IfcExtrudedAreaSolid>(s =>
             {
@@ -153,7 +199,7 @@ namespace ThBIMServer.Ifc2x3
         {
             return model.Instances.New<IfcLocalPlacement>(l =>
             {
-                l.PlacementRelTo = relative_to;
+                //l.PlacementRelTo = relative_to;
                 l.RelativePlacement = model.ToIfcAxis2Placement3D(((IfcLocalPlacement)relative_to).RelativePlacement);
             });
         }
@@ -181,6 +227,71 @@ namespace ThBIMServer.Ifc2x3
             {
                 d.SetXYZ(vector.X, vector.Y, vector.Z);
             });
+        }
+
+        private static IfcRelDefinesByProperties CloneAndCreateNew(this IfcRelDefinesByProperties property, IfcStore model)
+        {
+            var result = model.Instances.New<IfcRelDefinesByProperties>(rel =>
+            {
+                rel.Name = property.Name.ToString();
+                rel.RelatingPropertyDefinition = property.RelatingPropertyDefinition.CloneAndCreateNew(model);
+            });
+            return result;
+        }
+
+        private static IfcPropertySetDefinition CloneAndCreateNew(this IfcPropertySetDefinition propertySetDefinition, IfcStore model)
+        {
+            IfcPropertySetDefinition result;
+            if (propertySetDefinition is IfcPropertySet propertySet)
+            {
+                result = model.Instances.New<IfcPropertySet>(pset =>
+                {
+                    pset.Name = propertySet.Name.ToString();
+                    foreach (var item in propertySet.HasProperties)
+                    {
+                        pset.HasProperties.Add(item.CloneAndCreateNew(model));
+                    }
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+            return result;
+        }
+
+        private static IfcProperty CloneAndCreateNew(this IfcProperty property, IfcStore model)
+        {
+            IfcProperty result;
+            if (property is IfcPropertySingleValue propertySingleValue)
+            {
+                result = model.Instances.New<IfcPropertySingleValue>(p =>
+                {
+                    p.Name = propertySingleValue.Name.ToString();
+                    p.NominalValue = propertySingleValue.NominalValue.CloneAndCreateNew();
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+            return result;
+        }
+
+        private static IfcValue CloneAndCreateNew(this IfcValue value)
+        {
+            if (value is IfcText ifcText)
+            {
+                return new IfcText(ifcText.ToString());
+            }
+            else if (value is IfcLengthMeasure ifcLengthMeasure)
+            {
+                return new IfcLengthMeasure(double.Parse(ifcLengthMeasure.Value.ToString()));
+            }
+            else
+            {
+                return new IfcText(value.Value.ToString());
+            }
         }
     }
 }
