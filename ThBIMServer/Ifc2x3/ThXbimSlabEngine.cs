@@ -1,8 +1,8 @@
-﻿using Xbim.Ifc4.Interfaces;
+﻿using Xbim.Ifc;
+using Xbim.Ifc4.Interfaces;
 using Xbim.Geometry.Engine.Interop;
-using Xbim.Ifc;
 
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public class ThXbimSlabEngine
     {

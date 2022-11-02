@@ -2,8 +2,9 @@
 using Xbim.Common.Step21;
 using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.RepresentationResource;
+using Xbim.Ifc2x3.GeometricModelResource;
 
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public class ThIFC2x3Factory
     {
@@ -65,6 +66,22 @@ namespace ThMEPIFC.Ifc2x3
                     s.Items.Add(item);
                     s.ContextOfItems = context;
                     s.RepresentationType = "CSG";
+                    s.RepresentationIdentifier = "Body";
+                });
+            }
+            return null;
+        }
+
+        public static IfcShapeRepresentation CreateSolidClippingBody(IfcStore model, IfcRepresentationItem item)
+        {
+            var context = GetGeometricRepresentationContext(model);
+            if (context != null)
+            {
+                return model.Instances.New<IfcShapeRepresentation>(s =>
+                {
+                    s.Items.Add(item);
+                    s.ContextOfItems = context;
+                    s.RepresentationType = "Clipping";
                     s.RepresentationIdentifier = "Body";
                 });
             }

@@ -6,9 +6,8 @@ using Xbim.IO;
 using Xbim.Ifc;
 using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.SharedBldgElements;
-using ThBIMServer.Ifc2x3;
 
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public class ThProtoBuf2IFC2x3Builder
     {
@@ -84,9 +83,6 @@ namespace ThMEPIFC.Ifc2x3
                     ThProtoBuf2IFC2x3Factory.RelContainWindows2Storey(model, windows, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainsRailings2Storey(model, railings, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainsRooms2Storey(model, rooms, storey);
-
-                    // IfcRelDefinesByType 关系
-                    ThProtoBuf2IFC2x3RelDefinesFactory.RelDefinesByType2Wall(model, walls);
                 }
 
                 // IfcRelAggregates 关系

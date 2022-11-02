@@ -1,12 +1,13 @@
 ﻿using Xbim.Ifc;
 using Xbim.Common.Geometry;
-using Xbim.Ifc2x3.GeometryResource;
-using Xbim.Ifc2x3.GeometricConstraintResource;
-using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.ProfileResource;
-using ThMEPIFC.Geometry;
+using Xbim.Ifc2x3.GeometryResource;
+using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc2x3.GeometricConstraintResource;
 
-namespace ThMEPIFC.Ifc2x3
+using ThBIMServer.Geometries;
+
+namespace ThBIMServer.Ifc2x3
 {
     public static class ThProtoBuf2IFC2x3GeExtension
     {

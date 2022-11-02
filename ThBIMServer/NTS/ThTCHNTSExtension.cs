@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 
-namespace ThBIMServer.Geometry
+namespace ThBIMServer.NTS
 {
-    public static class ThNTSExtension
+    public static class ThTCHNTSExtension
     {
         private static PrecisionModel PM = NtsGeometryServices.Instance.DefaultPrecisionModel;
         private static GeometryFactory GF = NtsGeometryServices.Instance.CreateGeometryFactory();

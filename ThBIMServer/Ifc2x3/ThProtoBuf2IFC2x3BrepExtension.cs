@@ -1,13 +1,14 @@
-﻿using Xbim.Ifc;
+﻿using System;
 using System.Linq;
-using Xbim.Common.Geometry;
 using System.Collections.Generic;
+
+using Xbim.Ifc;
+using Xbim.Common.Geometry;
 using Xbim.Ifc2x3.GeometryResource;
 using Xbim.Ifc2x3.TopologyResource;
 using Xbim.Ifc2x3.GeometricModelResource;
-using System;
 
-namespace ThMEPIFC.Ifc2x3
+namespace ThBIMServer.Ifc2x3
 {
     public static class ThProtoBuf2IFC2x3BrepExtension
     {

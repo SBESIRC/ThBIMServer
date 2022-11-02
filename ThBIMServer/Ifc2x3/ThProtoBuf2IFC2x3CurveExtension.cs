@@ -1,8 +1,7 @@
 ﻿using Xbim.Ifc;
 using Xbim.Common.Geometry;
 using Xbim.Ifc2x3.GeometryResource;
-using ThMEPIFC.Ifc2x3;
-using ThMEPIFC.Geometry;
+using ThBIMServer.Geometries;
 
 namespace ThBIMServer.Ifc2x3
 {

@@ -1,6 +1,6 @@
 ﻿using Xbim.Common.Geometry;
 
-namespace ThMEPIFC.Geometry
+namespace ThBIMServer.Geometries
 {
     public static class ThXbimProtoBufExtension
     {

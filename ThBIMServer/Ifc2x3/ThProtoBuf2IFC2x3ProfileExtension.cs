@@ -1,7 +1,6 @@
 ﻿using Xbim.Ifc;
 using Xbim.Common.Geometry;
 using Xbim.Ifc2x3.ProfileResource;
-using ThMEPIFC.Ifc2x3;
 
 namespace ThBIMServer.Ifc2x3
 {

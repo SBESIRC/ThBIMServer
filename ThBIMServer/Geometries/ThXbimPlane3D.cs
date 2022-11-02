@@ -1,11 +1,11 @@
 ﻿using Xbim.Common.Geometry;
 using MathNet.Spatial.Euclidean;
 
-namespace ThMEPIFC.Geometry
+namespace ThBIMServer.Geometries
 {
     public class ThXbimPlane3D
     {
-        public Plane Geometry { get;private set; }
+        public Plane Geometry { get; private set; }
 
         public ThXbimPlane3D(XbimPoint3D rootPoint, XbimVector3D normal)
         {

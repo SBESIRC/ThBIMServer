@@ -1,27 +1,28 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+
 using Xbim.Ifc;
 using Xbim.Common;
 using Xbim.Ifc2x3.Kernel;
 using Xbim.Common.Geometry;
 using Xbim.Ifc2x3.Interfaces;
 using Xbim.Ifc2x3.ProfileResource;
-using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.MeasureResource;
 using Xbim.Ifc2x3.UtilityResource;
+using Xbim.Ifc2x3.GeometryResource;
+using Xbim.Ifc2x3.ProductExtension;
 using Xbim.Ifc2x3.PropertyResource;
 using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.RepresentationResource;
-using Xbim.Ifc2x3.GeometryResource;
-using ThMEPIFC.Geometry;
-using ThBIMServer.Geometry;
-using ThBIMServer.Ifc2x3;
 
-namespace ThMEPIFC.Ifc2x3
+using ThBIMServer.NTS;
+using ThBIMServer.Geometries;
+
+namespace ThBIMServer.Ifc2x3
 {
-    public partial class ThProtoBuf2IFC2x3Factory
+    public static class ThProtoBuf2IFC2x3Factory
     {
         private static XbimVector3D ZAxis => new XbimVector3D(0, 0, 1);
 
@@ -369,6 +370,9 @@ namespace ThMEPIFC.Ifc2x3
                 var solid = model.ToIfcExtrudedAreaSolid(profile, ZAxis, wall.BuildElement.Height);
                 ret.Representation = CreateProductDefinitionShape(model, solid);
 
+                //type
+                ret.AddDefiningType(GetWallType(model, wall));
+
                 //object placement
                 var transform = GetTransfrom(wall, storey.Origin);
                 ret.ObjectPlacement = model.ToIfcLocalPlacement(transform);
@@ -397,6 +401,53 @@ namespace ThMEPIFC.Ifc2x3
             }
         }
 
+        private static IfcWallType GetWallType(IfcStore model, ThTCHWallData wall)
+        {
+            var types = model.Instances.OfType<IfcWallType>().Where(o =>
+            {
+                if (wall.WallType == WallTypeEnum.Partitioning)
+                {
+                    return o.PredefinedType == IfcWallTypeEnum.STANDARD;
+                }
+                else if (wall.WallType == WallTypeEnum.Shear)
+                {
+                    return o.PredefinedType == IfcWallTypeEnum.SHEAR;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            });
+            if (types.Any())
+            {
+                return types.FirstOrDefault();
+            }
+            else
+            {
+                return CreateWallType(model, wall);
+            }
+        }
+
+        private static IfcWallType CreateWallType(IfcStore model, ThTCHWallData wall)
+        {
+            var type = model.Instances.New<IfcWallType>(t =>
+            {
+                if (wall.WallType == WallTypeEnum.Partitioning)
+                {
+                    t.PredefinedType = IfcWallTypeEnum.STANDARD;
+                }
+                else if (wall.WallType == WallTypeEnum.Shear)
+                {
+                    t.PredefinedType = IfcWallTypeEnum.SHEAR;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            });
+            return type;
+        }
+
         private static ThTCHMatrix3d GetTransfrom(ThTCHWallData wall, ThTCHPoint3d floor_origin)
         {
             //IFC创建的平面初始化是在XY平面的。所以需要增加一个Z值
@@ -409,7 +460,7 @@ namespace ThMEPIFC.Ifc2x3
 
         private static IfcProfileDef GetProfile(IfcStore model, ThTCHWallData wall)
         {
-            if (wall.BuildElement.Outline.Shell.Points.Count > 0)
+            if (wall.BuildElement.Outline != null && wall.BuildElement.Outline.Shell.Points.Count > 0)
             {
                 return model.ToIfcArbitraryClosedProfileDef(wall.BuildElement.Outline);
             }
@@ -795,7 +846,7 @@ namespace ThMEPIFC.Ifc2x3
                     });
                     if (componentData.InstanceName != null)
                     {
-                        var info = componentData.InstanceName.Replace(" ","").Replace("x",",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
+                        var info = componentData.InstanceName.Replace(" ", "").Replace("x", ",").Replace("X", ",").Replace("×", ",").Replace("*", ",");
                         info = "su," + info;
                         model.Instances.New<IfcRelDefinesByProperties>(rel =>
                         {

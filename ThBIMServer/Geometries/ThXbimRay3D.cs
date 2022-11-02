@@ -1,7 +1,7 @@
 ﻿using Xbim.Common.Geometry;
 using MathNet.Spatial.Euclidean;
 
-namespace ThMEPIFC.Geometry
+namespace ThBIMServer.Geometries
 {
     public class ThXbimRay3D
     {
