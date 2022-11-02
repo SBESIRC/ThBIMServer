@@ -83,9 +83,6 @@ namespace ThBIMServer.Ifc2x3
                     ThProtoBuf2IFC2x3Factory.RelContainWindows2Storey(model, windows, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainsRailings2Storey(model, railings, storey);
                     ThProtoBuf2IFC2x3Factory.RelContainsRooms2Storey(model, rooms, storey);
-
-                    // IfcRelDefinesByType 关系
-                    ThProtoBuf2IFC2x3RelDefinesFactory.RelDefinesByType2Wall(model, walls, IfcWallTypeEnum.STANDARD);
                 }
 
                 // IfcRelAggregates 关系
