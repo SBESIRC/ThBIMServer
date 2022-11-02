@@ -26,7 +26,8 @@ namespace ThBIMServer.Deduct
         public static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcWall struWall)
         {
             var solid = struWall.Representation.Representations.First().Items[0];
-            return ToIfcRepresentationItem(model, solid);
+            var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
+            return ToIfcRepresentationItem(model, solid, placement);
         }
 
         public static IfcLocalPlacement ToIfcLocalPlacement(IfcStore model, IfcObjectPlacement relative_to, IfcLengthMeasure measure)
@@ -45,15 +46,15 @@ namespace ThBIMServer.Deduct
             return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
         }
 
-        private static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcRepresentationItem solid)
+        private static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcRepresentationItem solid, IfcAxis2Placement placement)
         {
             if (solid is IfcExtrudedAreaSolid areaSolid)
             {
-                return ToIfcExtrudedAreaSolid(model, areaSolid);
+                return ToIfcExtrudedAreaSolid(model, areaSolid, placement);
             }
             else if (solid is IfcBooleanClippingResult clippingResult)
             {
-                return ToIfcBooleanClippingResult(model, clippingResult);
+                return ToIfcBooleanClippingResult(model, clippingResult, placement);
             }
             else
             {
@@ -72,13 +73,13 @@ namespace ThBIMServer.Deduct
             });
         }
 
-        private static IfcExtrudedAreaSolid ToIfcExtrudedAreaSolid(IfcStore model, IfcExtrudedAreaSolid areaSolid)
+        private static IfcExtrudedAreaSolid ToIfcExtrudedAreaSolid(IfcStore model, IfcExtrudedAreaSolid areaSolid, IfcAxis2Placement placement)
         {
             var newSolid = model.Instances.New<IfcExtrudedAreaSolid>(s =>
             {
                 s.Depth = areaSolid.Depth;
                 s.ExtrudedDirection = model.ToIfcDirection(new XbimVector3D(0, 0, 1));
-                s.Position = model.ToIfcAxis2Placement3D(XbimPoint3D.Zero);
+                s.Position = ToIfcAxis2Placement3D(model, placement);
             });
 
             if (areaSolid.SweptArea is IfcArbitraryClosedProfileDef arbitraryClosedProfile)
@@ -93,7 +94,7 @@ namespace ThBIMServer.Deduct
             return newSolid;
         }
 
-        private static IfcBooleanClippingResult ToIfcBooleanClippingResult(IfcStore model, IfcBooleanClippingResult clippingResult)
+        private static IfcBooleanClippingResult ToIfcBooleanClippingResult(IfcStore model, IfcBooleanClippingResult clippingResult, IfcAxis2Placement placement)
         {
             var newSolid = model.Instances.New<IfcBooleanClippingResult>(s =>
             {
@@ -102,11 +103,11 @@ namespace ThBIMServer.Deduct
 
             if (clippingResult.FirstOperand is IfcExtrudedAreaSolid extrudedAreaSolid)
             {
-                newSolid.FirstOperand = ToIfcExtrudedAreaSolid(model, extrudedAreaSolid);
+                newSolid.FirstOperand = ToIfcExtrudedAreaSolid(model, extrudedAreaSolid, placement);
             }
             else if (clippingResult.FirstOperand is IfcBooleanClippingResult result)
             {
-                newSolid.FirstOperand = ToIfcBooleanClippingResult(model, result);
+                newSolid.FirstOperand = ToIfcBooleanClippingResult(model, result, placement);
             }
             if (clippingResult.SecondOperand is IfcHalfSpaceSolid halfSpaceSolid)
             {
@@ -168,6 +169,10 @@ namespace ThBIMServer.Deduct
             {
                 return ToIfcCompositeCurve(model, polyline);
             }
+            else if(curve is IfcCompositeCurve compositeCurve)
+            {
+                return ToIfcCompositeCurve(model, compositeCurve);
+            }
             else
             {
                 throw new NotSupportedException();
@@ -185,6 +190,29 @@ namespace ThBIMServer.Deduct
                 compositeCurve.Segments.Add(curveSegement);
             }
             return compositeCurve;
+        }
+
+        private static IfcCompositeCurve ToIfcCompositeCurve(IfcStore model, IfcCompositeCurve compositeCurve)
+        {
+            var curve = ThIFC2x3Factory.CreateIfcCompositeCurve(model);
+            foreach(var segment in compositeCurve.Segments)
+            {
+                var curveSegement = ThIFC2x3Factory.CreateIfcCompositeCurveSegment(model);
+                if (segment.ParentCurve is IfcPolyline polyline )
+                {
+                    if (polyline.Points.Count == 2)
+                    {
+                        curveSegement.ParentCurve = ToIfcPolyline(model, polyline.Points[0], polyline.Points[1]);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                curve.Segments.Add(curveSegement);
+            }
+
+            return curve;
         }
 
         private static IfcPolyline ToIfcPolyline(IfcStore model, IfcCartesianPoint startPt, IfcCartesianPoint endPt)

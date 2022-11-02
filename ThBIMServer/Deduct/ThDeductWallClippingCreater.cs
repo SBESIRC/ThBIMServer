@@ -27,6 +27,8 @@ namespace ThBIMServer.Deduct
             {
                 var minuend = ThDeductFactory.ToIfcRepresentationItem(model, archWall);
                 var subtractor = ThDeductFactory.ToIfcRepresentationItem(model, struWall);
+
+                // 
                 archWall.Representation = ThDeductFactory.CreateIfcBooleanClippingResult(model, minuend, subtractor);
 
                 txn.Commit();
