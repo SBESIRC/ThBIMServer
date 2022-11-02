@@ -19,11 +19,16 @@ using ThBIMServer.Ifc2x3;
 
 namespace ThBIMServer.Deduct
 {
-    public class ThDeductWallClippingCreater
+    public static class ThDeductWallClippingCreater
     {
-        public void CreateClippingWall(IfcStore model, IfcWall archWall, IfcWall struWall)
+        public static void CreateClippingWall(IfcStore model, IfcWall archWall, IfcWall struWall)
         {
+            using (var txn = model.BeginTransaction("Create Clipping Solid"))
+            {
+                var body = ThDeductFactory.ToIfcRepresentationItem(model, struWall);
 
+                txn.Commit();
+            }
         }
     }
 }

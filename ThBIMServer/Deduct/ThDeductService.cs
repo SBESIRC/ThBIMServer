@@ -74,8 +74,11 @@ namespace ThBIMServer.Deduct
                             if (crossWall != null)
                             {
                                 // 建立墙与墙之间的打洞关系
-                                var ifcHole = ThDeductWallRelationCreater.CreateHole(model, struWall, (double)struStorey.Elevation.Value + 100);
-                                ThDeductWallRelationCreater.BuildRelationship(model, crossWall, struWall, ifcHole);
+                                //var ifcHole = ThDeductWallRelationCreater.CreateHole(model, struWall, (double)struStorey.Elevation.Value + 100);
+                                //ThDeductWallRelationCreater.BuildRelationship(model, crossWall, struWall, ifcHole);
+
+                                // 创建ClippingSolid实体
+                                ThDeductWallClippingCreater.CreateClippingWall(model, crossWall, struWall);
                             }
                         });
                     });
