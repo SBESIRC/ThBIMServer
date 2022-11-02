@@ -42,6 +42,12 @@ namespace ThBIMServer.Deduct
             }
         }
 
+        private static IfcProductDefinitionShape CreateProductDefinitionShape(this IfcStore model, IfcRepresentationItem solid)
+        {
+            var shape = ThIFC2x3Factory.CreateSolidClippingBody(model, solid);
+            return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
+        }
+
         public static void BuildRelationship(this IfcStore model, IfcWall archWall, IfcWall struWall, IfcOpeningElement hole)
         {
             using (var txn = model.BeginTransaction())
