@@ -78,7 +78,7 @@
     <Compile Include="Data\ThTCHSlabData.cs" />
     <Compile Include="Data\ThTCHWallData.cs" />
     <Compile Include="Data\ThTCHWindowData.cs" />
-    <Compile Include="Deduct\IfcWallRelationCreater.cs" />
+    <Compile Include="Deduct\IfcDeductWallRelationCreater.cs" />
     <Compile Include="Ifc2x3\ThIFC2x32IFC2x3Factory.cs" />
     <Compile Include="Ifc4\ThIFC42IFC2x3Factory.cs" />
     <Compile Include="Ifc4\ThIFC4Factory.cs" />

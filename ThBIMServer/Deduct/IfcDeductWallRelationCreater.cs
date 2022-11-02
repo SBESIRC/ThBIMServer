@@ -12,10 +12,11 @@ using Xbim.Ifc2x3.GeometricConstraintResource;
 
 using ThBIMServer.NTS;
 using ThBIMServer.Ifc2x3;
+using Xbim.Ifc2x3.MeasureResource;
 
 namespace ThBIMServer.Deduct
 {
-    public class IfcWallRelationCreater
+    public class IfcDeductWallRelationCreater
     {
         public void CreateRelation(IfcStore model)
         {
@@ -57,7 +58,7 @@ namespace ThBIMServer.Deduct
                         var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o.Item1)).FirstOrDefault();
                         if (crossWall != null)
                         {
-                            CreateRelation(model, crossWall, struWall);
+                            CreateRelation(model, crossWall, struWall, (double)storey.Elevation.Value);
                         }
                     });
                 });
@@ -71,7 +72,7 @@ namespace ThBIMServer.Deduct
             foreach (var archStorey in project.Sites.Last().Buildings.First().BuildingStoreys.ToList())
             {
                 var struStorey = struStoreys.FirstOrDefault(o => StoreyCompare(o.Name.Value, archStorey.Name.Value));
-                if (struStorey != null)
+                if (struStorey == null)
                 {
                     continue;
                 }
@@ -106,7 +107,7 @@ namespace ThBIMServer.Deduct
                         var crossWall = archWalls.Where(archWall => ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
                         if (crossWall != null)
                         {
-                            CreateRelation(model, crossWall, struWall);
+                            CreateRelation(model, crossWall, struWall, (double)struStorey.Elevation.Value + 100);
                         }
                     });
                 });
@@ -136,9 +137,9 @@ namespace ThBIMServer.Deduct
             }
         }
 
-        private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall)
+        private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall, IfcLengthMeasure measure)
         {
-            var ifcHole = ThIFC2x32IFC2x3Factory.CreateHole(model, struWall);
+            var ifcHole = ThIFC2x32IFC2x3Factory.CreateHole(model, struWall, measure);
             ThIFC2x32IFC2x3Factory.BuildRelationship(model, archWall, struWall, ifcHole);
         }
 

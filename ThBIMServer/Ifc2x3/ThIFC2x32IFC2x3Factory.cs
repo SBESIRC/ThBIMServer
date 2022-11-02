@@ -61,7 +61,7 @@ namespace ThBIMServer.Ifc2x3
             }
         }
 
-        public static IfcOpeningElement CreateHole(IfcStore model, IfcWall struWall)
+        public static IfcOpeningElement CreateHole(IfcStore model, IfcWall struWall, IfcLengthMeasure measure)
         {
             using (var txn = model.BeginTransaction("Create Hole"))
             {
@@ -76,7 +76,7 @@ namespace ThBIMServer.Ifc2x3
                 ret.Representation = model.CreateProductDefinitionShape(body);
 
                 //object placement
-                ret.ObjectPlacement = ToIfcLocalPlacement(model, struWall.ObjectPlacement);
+                ret.ObjectPlacement = ToIfcLocalPlacement(model, struWall.ObjectPlacement, measure);
 
                 txn.Commit();
                 return ret;
@@ -252,12 +252,20 @@ namespace ThBIMServer.Ifc2x3
             });
         }
 
-        private static IfcLocalPlacement ToIfcLocalPlacement(IfcStore model, IfcObjectPlacement relative_to)
+        private static IfcCartesianPoint ToIfcCartesianPoint(this IfcStore model, IfcCartesianPoint point, IfcLengthMeasure measure)
+        {
+            return model.Instances.New<IfcCartesianPoint>(c =>
+            {
+                c.SetXYZ(point.X, point.Y, point.Z + (double)measure.Value);
+            });
+        }
+
+        private static IfcLocalPlacement ToIfcLocalPlacement(IfcStore model, IfcObjectPlacement relative_to, IfcLengthMeasure measure)
         {
             return model.Instances.New<IfcLocalPlacement>(l =>
             {
                 //l.PlacementRelTo = relative_to;
-                l.RelativePlacement = model.ToIfcAxis2Placement3D(((IfcLocalPlacement)relative_to).RelativePlacement);
+                l.RelativePlacement = model.ToIfcAxis2Placement3D(((IfcLocalPlacement)relative_to).RelativePlacement, measure);
             });
         }
 
@@ -270,6 +278,23 @@ namespace ThBIMServer.Ifc2x3
                     p.Axis = model.ToIfcDirection(placement3D.Axis);
                     p.RefDirection = model.ToIfcDirection(placement3D.RefDirection);
                     p.Location = model.ToIfcCartesianPoint(placement3D.Location);
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        private static IfcAxis2Placement3D ToIfcAxis2Placement3D(this IfcStore model, IfcAxis2Placement placement, IfcLengthMeasure measure)
+        {
+            if (placement is IfcAxis2Placement3D placement3D)
+            {
+                return model.Instances.New<IfcAxis2Placement3D>(p =>
+                {
+                    p.Axis = model.ToIfcDirection(placement3D.Axis);
+                    p.RefDirection = model.ToIfcDirection(placement3D.RefDirection);
+                    p.Location = model.ToIfcCartesianPoint(placement3D.Location, measure);
                 });
             }
             else

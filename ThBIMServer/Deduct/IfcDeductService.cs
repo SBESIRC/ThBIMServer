@@ -57,7 +57,7 @@ namespace ThBIMServer.Deduct
 
             using (var iModel = IfcStore.Open(archPath))
             {
-                var creater = new IfcWallRelationCreater();
+                var creater = new IfcDeductWallRelationCreater();
                 creater.CreateRelationInSites(iModel);
 
                 iModel.SaveAs(inserted);
