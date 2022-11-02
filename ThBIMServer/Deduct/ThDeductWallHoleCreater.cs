@@ -14,53 +14,12 @@ using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
 using Xbim.Ifc2x3.RepresentationResource;
 using Xbim.Ifc2x3.GeometricConstraintResource;
+using ThBIMServer.Ifc2x3;
 
-namespace ThBIMServer.Ifc2x3
+namespace ThBIMServer.Deduct
 {
-    public static class ThIFC2x32IFC2x3Factory
+    public static class ThDeductWallHoleCreater
     {
-        public static IfcWall CloneAndCreateNew(this IfcWall sourceWall, IfcStore model)
-        {
-            using (var txn = model.BeginTransaction("Create Wall"))
-            {
-                var ret = model.Instances.New<IfcWall>();
-                ret.Name = sourceWall.Name.ToString();
-                ret.Description = sourceWall.Description.ToString();
-
-                //model as a swept area solid
-                var body = model.ToIfcRepresentationItem(sourceWall);
-
-                //Create a Definition shape to hold the geometry
-                var modelContext = model.Instances.OfType<IfcGeometricRepresentationContext>().FirstOrDefault();
-                var shape = model.Instances.New<IfcShapeRepresentation>();
-                shape.ContextOfItems = modelContext;
-                shape.RepresentationType = "SurfaceModel";
-                shape.RepresentationIdentifier = "Body";
-                shape.Items.Add(body);
-
-                //Create a Product Definition and add the model geometry to the wall
-                var rep = model.Instances.New<IfcProductDefinitionShape>();
-                rep.Representations.Add(shape);
-                ret.Representation = rep;
-
-                //now place the wall into the model
-                var lp = model.Instances.New<IfcLocalPlacement>();
-                var ax3D = model.ToIfcAxis2Placement3D((sourceWall.ObjectPlacement as IfcLocalPlacement).RelativePlacement);
-                lp.RelativePlacement = ax3D;
-                ret.ObjectPlacement = lp;
-
-                // add properties
-                var property = sourceWall.Model.Instances.OfType<IfcRelDefinesByProperties>().FirstOrDefault(o => o.RelatedObjects.Contains(sourceWall));
-                if (property != null)
-                {
-                    var ifcRelDefinesByProperties = property.CloneAndCreateNew(model);
-                    ifcRelDefinesByProperties.RelatedObjects.Add(ret);
-                }
-                txn.Commit();
-                return ret;
-            }
-        }
-
         public static IfcOpeningElement CreateHole(IfcStore model, IfcWall struWall, IfcLengthMeasure measure)
         {
             using (var txn = model.BeginTransaction("Create Hole"))
@@ -166,7 +125,7 @@ namespace ThBIMServer.Ifc2x3
             {
                 newSolid.FirstOperand = model.ToIfcExtrudedAreaSolid(extrudedAreaSolid);
             }
-            else if(clippingResult.FirstOperand is IfcBooleanClippingResult result)
+            else if (clippingResult.FirstOperand is IfcBooleanClippingResult result)
             {
                 newSolid.FirstOperand = model.ToIfcBooleanClippingResult(result);
             }

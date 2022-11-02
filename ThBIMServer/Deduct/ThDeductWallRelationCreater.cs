@@ -16,7 +16,7 @@ using Xbim.Ifc2x3.MeasureResource;
 
 namespace ThBIMServer.Deduct
 {
-    public class IfcDeductWallRelationCreater
+    public class ThDeductWallRelationCreater
     {
         public void CreateRelation(IfcStore model)
         {
@@ -139,8 +139,8 @@ namespace ThBIMServer.Deduct
 
         private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall, IfcLengthMeasure measure)
         {
-            var ifcHole = ThIFC2x32IFC2x3Factory.CreateHole(model, struWall, measure);
-            ThIFC2x32IFC2x3Factory.BuildRelationship(model, archWall, struWall, ifcHole);
+            var ifcHole = ThDeductWallHoleCreater.CreateHole(model, struWall, measure);
+            ThDeductWallHoleCreater.BuildRelationship(model, archWall, struWall, ifcHole);
         }
 
         private bool StoreyCompare(Xbim.Ifc4.MeasureResource.IfcLabel? str1, string str2)

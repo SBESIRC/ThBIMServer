@@ -1,17 +1,9 @@
-﻿using System.Linq;
-
-using Xbim.Ifc;
+﻿using Xbim.Ifc;
 using Xbim.Common;
-using Xbim.Common.Step21;
-using Xbim.Ifc2x3.Kernel;
-
-using ThBIMServer.Ifc2x3;
-using ThBIMServer.Ifc4;
-using ThBIMServer.ModelMerge;
 
 namespace ThBIMServer.Deduct
 {
-    public class IfcDeductService
+    public class ThDeductService
     {
         private const string inserted = "D:\\项目\\三维平台\\测试图\\ifc\\建筑结构合并.ifc";
 
@@ -57,7 +49,7 @@ namespace ThBIMServer.Deduct
 
             using (var iModel = IfcStore.Open(archPath))
             {
-                var creater = new IfcDeductWallRelationCreater();
+                var creater = new ThDeductWallRelationCreater();
                 creater.CreateRelationInSites(iModel);
 
                 iModel.SaveAs(inserted);

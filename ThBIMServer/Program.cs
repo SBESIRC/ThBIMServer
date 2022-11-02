@@ -9,7 +9,7 @@ namespace ThBIMServer
             //var service = new PipeService();
             //service.Work();
 
-            var service = new IfcDeductService();
+            var service = new ThDeductService();
             service.Deduct();
         }
     }
