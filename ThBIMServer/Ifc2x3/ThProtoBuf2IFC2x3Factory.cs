@@ -454,7 +454,7 @@ namespace ThBIMServer.Ifc2x3
             var offset = new XbimVector3D(
                 floor_origin.X + wall.BuildElement.Origin.X,
                 floor_origin.Y + wall.BuildElement.Origin.Y,
-                floor_origin.Z + wall.BuildElement.Origin.Z);
+                floor_origin.Z + wall.BuildElement.Outline.Shell.Points[0].Z + wall.BuildElement.Origin.Z);
             return ThXbimExtension.MultipleTransformFroms(1.0, wall.BuildElement.XVector.ToXbimVector3D(), offset).ToTCHMatrix3d();
         }
 
