@@ -32,19 +32,19 @@ namespace ThBIMServer.Ifc2x3
                     storeys.Add(storey);
                     foreach (var thtchwall in thtchstorey.Walls)
                     {
-                        var wall = ThProtoBuf2IFC2x3Factory.CreateWall(model, thtchwall, thtchstorey);
+                        var wall = ThProtoBuf2IFC2x3Factory.CreateWall(model, storey, thtchwall);
                         walls.Add(wall);
                         foreach (var thtchdoor in thtchwall.Doors)
                         {
-                            doors.Add(SetupDoor(model, wall, thtchwall, thtchdoor, thtchstorey));
+                            doors.Add(SetupDoor(model, storey, wall, thtchwall, thtchdoor));
                         }
                         foreach (var thtchwindow in thtchwall.Windows)
                         {
-                            windows.Add(SetupWindow(model, wall, thtchwall, thtchwindow, thtchstorey));
+                            windows.Add(SetupWindow(model, storey, wall, thtchwall, thtchwindow));
                         }
                         foreach (var thtchhole in thtchwall.Openings)
                         {
-                            SetupHole(model, wall, thtchhole, thtchstorey);
+                            SetupHole(model, storey, wall, thtchhole);
                         }
                     }
                     //暂不支持梁和柱
@@ -60,17 +60,17 @@ namespace ThBIMServer.Ifc2x3
                     //}
                     foreach (var thtchslab in thtchstorey.Slabs)
                     {
-                        var slab = ThProtoBuf2IFC2x3Factory.CreateBrepSlab(model, thtchslab, thtchstorey);
+                        var slab = ThProtoBuf2IFC2x3Factory.CreateBrepSlab(model, storey, thtchslab);
                         slabs.Add(slab);
                     }
                     foreach (var thtchrailing in thtchstorey.Railings)
                     {
-                        var railing = ThProtoBuf2IFC2x3Factory.CreateRailing(model, thtchrailing, thtchstorey);
+                        var railing = ThProtoBuf2IFC2x3Factory.CreateRailing(model, storey, thtchrailing);
                         railings.Add(railing);
                     }
                     foreach (var thtchRoom in thtchstorey.Rooms)
                     {
-                        var room = ThProtoBuf2IFC2x3Factory.CreateRoom(model, thtchRoom, thtchstorey);
+                        var room = ThProtoBuf2IFC2x3Factory.CreateRoom(model, storey, thtchRoom);
                         rooms.Add(room);
                     }
 
@@ -130,25 +130,25 @@ namespace ThBIMServer.Ifc2x3
             }
         }
 
-        public static IfcDoor SetupDoor(IfcStore model, IfcWall ifcWall, ThTCHWallData wall, ThTCHDoorData door, ThTCHBuildingStoreyData storey)
+        public static IfcDoor SetupDoor(IfcStore model, IfcBuildingStorey storey, IfcWall ifcWall, ThTCHWallData wall, ThTCHDoorData door)
         {
-            var ifcDoor = ThProtoBuf2IFC2x3Factory.CreateDoor(model, door, storey);
-            var ifcHole = ThProtoBuf2IFC2x3Factory.CreateHole(model, wall, door, storey);
+            var ifcDoor = ThProtoBuf2IFC2x3Factory.CreateDoor(model, storey, door);
+            var ifcHole = ThProtoBuf2IFC2x3Factory.CreateHole(model, storey, wall, door);
             ThProtoBuf2IFC2x3Factory.BuildRelationship(model, ifcWall, ifcDoor, ifcHole);
             return ifcDoor;
         }
 
-        public static IfcWindow SetupWindow(IfcStore model, IfcWall ifcWall, ThTCHWallData wall, ThTCHWindowData window, ThTCHBuildingStoreyData storey)
+        public static IfcWindow SetupWindow(IfcStore model, IfcBuildingStorey storey, IfcWall ifcWall, ThTCHWallData wall, ThTCHWindowData window)
         {
-            var ifcWindow = ThProtoBuf2IFC2x3Factory.CreateWindow(model, window, storey);
-            var ifcHole = ThProtoBuf2IFC2x3Factory.CreateHole(model, wall, window, storey);
+            var ifcWindow = ThProtoBuf2IFC2x3Factory.CreateWindow(model, storey, window);
+            var ifcHole = ThProtoBuf2IFC2x3Factory.CreateHole(model, storey, wall, window);
             ThProtoBuf2IFC2x3Factory.BuildRelationship(model, ifcWall, ifcWindow, ifcHole);
             return ifcWindow;
         }
 
-        public static IfcOpeningElement SetupHole(IfcStore model, IfcWall ifcWall, ThTCHOpeningData hole, ThTCHBuildingStoreyData storey)
+        public static IfcOpeningElement SetupHole(IfcStore model, IfcBuildingStorey storey, IfcWall ifcWall, ThTCHOpeningData hole)
         {
-            var ifcHole = ThProtoBuf2IFC2x3Factory.CreateHole(model, hole, storey);
+            var ifcHole = ThProtoBuf2IFC2x3Factory.CreateHole(model, storey, hole);
             ThProtoBuf2IFC2x3Factory.BuildRelationship(model, ifcWall, ifcHole);
             return ifcHole;
         }
