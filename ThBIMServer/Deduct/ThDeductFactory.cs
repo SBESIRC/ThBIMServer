@@ -38,6 +38,13 @@ namespace ThBIMServer.Deduct
             });
         }
 
+        public static IfcProductDefinitionShape CreateIfcBooleanClippingResult(IfcStore model, IfcRepresentationItem minuend, IfcRepresentationItem subtractor)
+        {
+            var solid = ToIfcBooleanClippingResult(model, minuend, subtractor);
+            var shape = ThIFC2x3Factory.CreateSolidClippingBody(model, solid);
+            return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
+        }
+
         private static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcRepresentationItem solid)
         {
             if (solid is IfcExtrudedAreaSolid areaSolid)
@@ -105,6 +112,19 @@ namespace ThBIMServer.Deduct
             {
                 newSolid.SecondOperand = ToIfcHalfSpaceSolid(model, halfSpaceSolid);
             }
+
+            return newSolid;
+        }
+
+        private static IfcBooleanClippingResult ToIfcBooleanClippingResult(IfcStore model, IfcRepresentationItem minuend, IfcRepresentationItem subtractor)
+        {
+            var newSolid = model.Instances.New<IfcBooleanClippingResult>(s =>
+            {
+                s.Operator = IfcBooleanOperator.DIFFERENCE;
+            });
+
+            newSolid.FirstOperand = (IfcBooleanOperand)minuend;
+            newSolid.SecondOperand = (IfcBooleanOperand)subtractor;
 
             return newSolid;
         }
