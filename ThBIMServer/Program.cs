@@ -6,11 +6,11 @@ namespace ThBIMServer
     {
         public static void Main(string[] args)
         {
-            var service = new PipeService();
-            service.Work();
+            //var service = new PipeService();
+            //service.Work();
 
-            //var service = new ThDeductService();
-            //service.Deduct();
+            var service = new ThDeductService();
+            service.Deduct();
         }
     }
 }

@@ -1,151 +1,352 @@
 ﻿using System;
 using System.Linq;
-using System.Collections.Generic;
 
 using Xbim.Ifc;
 using Xbim.Ifc2x3.Kernel;
+using Xbim.Common.Geometry;
+using Xbim.Ifc2x3.UtilityResource;
+using Xbim.Ifc2x3.MeasureResource;
 using Xbim.Ifc2x3.ProfileResource;
 using Xbim.Ifc2x3.GeometryResource;
+using Xbim.Ifc2x3.ProductExtension;
+using Xbim.Ifc2x3.PropertyResource;
 using Xbim.Ifc2x3.SharedBldgElements;
 using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc2x3.RepresentationResource;
 using Xbim.Ifc2x3.GeometricConstraintResource;
 
-using ThBIMServer.NTS;
 using ThBIMServer.Ifc2x3;
-using Xbim.Ifc2x3.MeasureResource;
 
 namespace ThBIMServer.Deduct
 {
-    public class ThDeductWallRelationCreater
+    public static class ThDeductWallRelationCreater
     {
-        public void CreateRelation(IfcStore model)
+        public static IfcOpeningElement CreateHole(IfcStore model, IfcWall struWall, IfcLengthMeasure measure)
         {
-            var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
-            var buildingStoreys = project.Sites.First().Buildings.First().BuildingStoreys.ToList();
-            foreach (var storey in buildingStoreys)
+            using (var txn = model.BeginTransaction("Create Hole"))
             {
-                var walls = new List<IfcWall>();
-                foreach (var r in storey.ContainsElements)
+                var ret = model.Instances.New<IfcOpeningElement>(d =>
                 {
-                    walls.AddRange(r.RelatedElements.OfType<IfcWall>());
-                }
-                var types = model.Instances.OfType<IfcRelDefinesByType>().ToList();
-                //var archType = model.Instances.Where((IfcRelDefinesByType r) => r.RelatingType == IfcWallTypeEnum.STANDARD).FirstOrDefault();
-                var struType = types.Where(r => ((IfcWallType)r.RelatingType).PredefinedType == IfcWallTypeEnum.SHEAR).FirstOrDefault();
-                if (struType == null)
-                {
-                    return;
-                }
-
-                var struWalls = walls.Where(o => struType.RelatedObjects.Contains(o)).ToList();
-                var archWalls = walls.Except(struWalls).ToList();
-                var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
-                archWalls.ForEach(o =>
-                {
-                    var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
-                    archProfileInfos.Add(Tuple.Create(profile, placement));
+                    d.Name = "Wall Deduction";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
 
-                var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
-                struWalls.ForEach(struWall =>
-                {
-                    var profile = ((IfcSweptAreaSolid)struWall.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
-                    var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
-                    filter.ForEach(o =>
-                    {
-                        var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o.Item1)).FirstOrDefault();
-                        if (crossWall != null)
-                        {
-                            CreateRelation(model, crossWall, struWall, (double)storey.Elevation.Value);
-                        }
-                    });
-                });
+                //create representation
+                var body = model.ToIfcRepresentationItem(struWall);
+                ret.Representation = model.CreateProductDefinitionShape(body);
+
+                //object placement
+                ret.ObjectPlacement = ToIfcLocalPlacement(model, struWall.ObjectPlacement, measure);
+
+                txn.Commit();
+                return ret;
             }
         }
 
-        public void CreateRelationInSites(IfcStore model)
+        private static IfcProductDefinitionShape CreateProductDefinitionShape(this IfcStore model, IfcRepresentationItem solid)
         {
-            var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
-            var struStoreys = project.Sites.First().Buildings.First().BuildingStoreys.ToList();
-            foreach (var archStorey in project.Sites.Last().Buildings.First().BuildingStoreys.ToList())
+            var shape = ThIFC2x3Factory.CreateSolidClippingBody(model, solid);
+            return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
+        }
+
+        public static void BuildRelationship(this IfcStore model, IfcWall archWall, IfcWall struWall, IfcOpeningElement hole)
+        {
+            using (var txn = model.BeginTransaction())
             {
-                var struStorey = struStoreys.FirstOrDefault(o => StoreyCompare(o.Name.Value, archStorey.Name.Value));
-                if (struStorey == null)
-                {
-                    continue;
-                }
-                var struWalls = new List<IfcWall>();
-                foreach (var r in struStorey.ContainsElements)
-                {
-                    struWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
-                }
-                var archWalls = new List<IfcWall>();
-                foreach (var r in archStorey.ContainsElements)
-                {
-                    archWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
-                }
+                //create relVoidsElement
+                var relVoidsElement = model.Instances.New<IfcRelVoidsElement>();
+                relVoidsElement.RelatedOpeningElement = hole;
+                relVoidsElement.RelatingBuildingElement = archWall;
 
-                var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
-                archWalls.ForEach(o =>
-                {
-                    var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
-                    archProfileInfos.Add(Tuple.Create(profile, placement));
-                });
+                //create relFillsElement
+                var relFillsElement = model.Instances.New<IfcRelFillsElement>();
+                relFillsElement.RelatingOpeningElement = hole;
+                relFillsElement.RelatedBuildingElement = struWall;
 
-                var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
-                struWalls.ForEach(struWall =>
-                {
-                    var solid = struWall.Representation.Representations[0].Items[0];
-                    var profile = GetIfcProfileDef(solid);
-                    var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
-                    var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
-                    filter.ForEach(o =>
-                    {
-                        var crossWall = archWalls.Where(archWall => ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
-                        if (crossWall != null)
-                        {
-                            CreateRelation(model, crossWall, struWall, (double)struStorey.Elevation.Value + 100);
-                        }
-                    });
-                });
+                txn.Commit();
             }
         }
 
-        private IfcProfileDef GetIfcProfileDef(IfcRepresentationItem solid)
+        private static IfcRepresentationItem ToIfcRepresentationItem(this IfcStore model, IfcWall struWall)
         {
-            if (solid is IfcSweptAreaSolid sweptArea)
+            var solid = struWall.Representation.Representations.First().Items[0];
+            return model.ToIfcRepresentationItem(solid);
+        }
+
+        private static IfcRepresentationItem ToIfcRepresentationItem(this IfcStore model, IfcRepresentationItem solid)
+        {
+            if (solid is IfcExtrudedAreaSolid areaSolid)
             {
-                return sweptArea.SweptArea;
+                return model.ToIfcExtrudedAreaSolid(areaSolid);
             }
             else if (solid is IfcBooleanClippingResult clippingResult)
             {
-                if (clippingResult.FirstOperand is IfcSweptAreaSolid e)
-                {
-                    return e.SweptArea;
-                }
-                else
-                {
-                    return GetIfcProfileDef(clippingResult.FirstOperand as IfcRepresentationItem);
-                }
+                return model.ToIfcBooleanClippingResult(clippingResult);
             }
             else
             {
-                return null;
+                throw new NotImplementedException();
             }
         }
 
-        private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall, IfcLengthMeasure measure)
+        private static IfcRectangleProfileDef ToIfcRectangleProfileDef(this IfcStore model, IfcRectangleProfileDef rectangleProfile)
         {
-            var ifcHole = ThDeductWallHoleCreater.CreateHole(model, struWall, measure);
-            ThDeductWallHoleCreater.BuildRelationship(model, archWall, struWall, ifcHole);
+            return model.Instances.New<IfcRectangleProfileDef>(d =>
+            {
+                d.XDim = rectangleProfile.XDim;
+                d.YDim = rectangleProfile.YDim;
+                d.ProfileType = IfcProfileTypeEnum.AREA;
+                d.Position = model.ToIfcAxis2Placement2D(XbimPoint3D.Zero);
+            });
         }
 
-        private bool StoreyCompare(Xbim.Ifc4.MeasureResource.IfcLabel? str1, string str2)
+        private static IfcExtrudedAreaSolid ToIfcExtrudedAreaSolid(this IfcStore model, IfcExtrudedAreaSolid areaSolid)
         {
-            return str1 == str2 || str1 == str2 + "F" || str1 + "F" == str2;
+            var newSolid = model.Instances.New<IfcExtrudedAreaSolid>(s =>
+            {
+                s.Depth = areaSolid.Depth;
+                s.ExtrudedDirection = model.ToIfcDirection(new XbimVector3D(0, 0, 1));
+                s.Position = model.ToIfcAxis2Placement3D(XbimPoint3D.Zero);
+            });
+
+            if (areaSolid.SweptArea is IfcArbitraryClosedProfileDef arbitraryClosedProfile)
+            {
+                newSolid.SweptArea = model.ToIfcArbitraryClosedProfileDef(arbitraryClosedProfile);
+            }
+            else if (areaSolid.SweptArea is IfcRectangleProfileDef rectangleProfile)
+            {
+                newSolid.SweptArea = model.ToIfcRectangleProfileDef(rectangleProfile);
+            }
+
+            return newSolid;
+        }
+
+        private static IfcBooleanClippingResult ToIfcBooleanClippingResult(this IfcStore model, IfcBooleanClippingResult clippingResult)
+        {
+            var newSolid = model.Instances.New<IfcBooleanClippingResult>(s =>
+            {
+                s.Operator = clippingResult.Operator;
+            });
+
+            if (clippingResult.FirstOperand is IfcExtrudedAreaSolid extrudedAreaSolid)
+            {
+                newSolid.FirstOperand = model.ToIfcExtrudedAreaSolid(extrudedAreaSolid);
+            }
+            else if (clippingResult.FirstOperand is IfcBooleanClippingResult result)
+            {
+                newSolid.FirstOperand = model.ToIfcBooleanClippingResult(result);
+            }
+            if (clippingResult.SecondOperand is IfcHalfSpaceSolid halfSpaceSolid)
+            {
+                newSolid.SecondOperand = model.ToIfcHalfSpaceSolid(halfSpaceSolid);
+            }
+
+            return newSolid;
+        }
+
+        private static IfcHalfSpaceSolid ToIfcHalfSpaceSolid(this IfcStore model, IfcHalfSpaceSolid halfSpaceSolid)
+        {
+            var newSolid = model.Instances.New<IfcHalfSpaceSolid>(s =>
+            {
+            });
+
+            if (halfSpaceSolid.BaseSurface is IfcPlane plane)
+            {
+                newSolid.BaseSurface = model.ToIfcPlane(plane.Position);
+            }
+
+            return newSolid;
+        }
+
+        private static IfcPlane ToIfcPlane(this IfcStore model, IfcAxis2Placement placement)
+        {
+            var newSolid = model.Instances.New<IfcPlane>(p =>
+            {
+                p.Position = model.ToIfcAxis2Placement3D(placement);
+            });
+
+            return newSolid;
+        }
+
+        private static IfcArbitraryClosedProfileDef ToIfcArbitraryClosedProfileDef(this IfcStore model, IfcArbitraryClosedProfileDef arbitraryClosedProfile)
+        {
+            return model.Instances.New<IfcArbitraryClosedProfileDef>(d =>
+            {
+                d.ProfileType = IfcProfileTypeEnum.AREA;
+                d.OuterCurve = model.ToIfcCompositeCurve(arbitraryClosedProfile.OuterCurve);
+            });
+        }
+
+        private static IfcCompositeCurve ToIfcCompositeCurve(this IfcStore model, IfcCurve curve)
+        {
+            if (curve is IfcPolyline polyline)
+            {
+                return model.ToIfcCompositeCurve(polyline);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        private static IfcCompositeCurve ToIfcCompositeCurve(this IfcStore model, IfcPolyline polyline)
+        {
+            var compositeCurve = ThIFC2x3Factory.CreateIfcCompositeCurve(model);
+            var pts = polyline.Points;
+            for (int k = 0; k < polyline.Points.Count() - 1; k++)
+            {
+                var curveSegement = ThIFC2x3Factory.CreateIfcCompositeCurveSegment(model);
+                curveSegement.ParentCurve = model.ToIfcPolyline(pts[k], pts[k + 1]);
+                compositeCurve.Segments.Add(curveSegement);
+            }
+            return compositeCurve;
+        }
+
+        private static IfcPolyline ToIfcPolyline(this IfcStore model, IfcCartesianPoint startPt, IfcCartesianPoint endPt)
+        {
+            var poly = model.Instances.New<IfcPolyline>();
+            poly.Points.Add(model.ToIfcCartesianPoint(startPt));
+            poly.Points.Add(model.ToIfcCartesianPoint(endPt));
+            return poly;
+        }
+
+        private static IfcCartesianPoint ToIfcCartesianPoint(this IfcStore model, IfcCartesianPoint point)
+        {
+            return model.Instances.New<IfcCartesianPoint>(c =>
+            {
+                c.SetXYZ(point.X, point.Y, point.Z);
+            });
+        }
+
+        private static IfcCartesianPoint ToIfcCartesianPoint(this IfcStore model, IfcCartesianPoint point, IfcLengthMeasure measure)
+        {
+            return model.Instances.New<IfcCartesianPoint>(c =>
+            {
+                c.SetXYZ(point.X, point.Y, point.Z + (double)measure.Value);
+            });
+        }
+
+        private static IfcLocalPlacement ToIfcLocalPlacement(IfcStore model, IfcObjectPlacement relative_to, IfcLengthMeasure measure)
+        {
+            return model.Instances.New<IfcLocalPlacement>(l =>
+            {
+                //l.PlacementRelTo = relative_to;
+                l.RelativePlacement = model.ToIfcAxis2Placement3D(((IfcLocalPlacement)relative_to).RelativePlacement, measure);
+            });
+        }
+
+        private static IfcAxis2Placement3D ToIfcAxis2Placement3D(this IfcStore model, IfcAxis2Placement placement)
+        {
+            if (placement is IfcAxis2Placement3D placement3D)
+            {
+                return model.Instances.New<IfcAxis2Placement3D>(p =>
+                {
+                    p.Axis = model.ToIfcDirection(placement3D.Axis);
+                    p.RefDirection = model.ToIfcDirection(placement3D.RefDirection);
+                    p.Location = model.ToIfcCartesianPoint(placement3D.Location);
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        private static IfcAxis2Placement3D ToIfcAxis2Placement3D(this IfcStore model, IfcAxis2Placement placement, IfcLengthMeasure measure)
+        {
+            if (placement is IfcAxis2Placement3D placement3D)
+            {
+                return model.Instances.New<IfcAxis2Placement3D>(p =>
+                {
+                    p.Axis = model.ToIfcDirection(placement3D.Axis);
+                    p.RefDirection = model.ToIfcDirection(placement3D.RefDirection);
+                    p.Location = model.ToIfcCartesianPoint(placement3D.Location, measure);
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public static IfcDirection ToIfcDirection(this IfcStore model, IfcDirection vector)
+        {
+            if (vector == null)
+            {
+                return null;
+            }
+            else
+            {
+                return model.Instances.New<IfcDirection>(d =>
+                {
+                    d.SetXYZ(vector.X, vector.Y, vector.Z);
+                });
+            }
+        }
+
+        private static IfcRelDefinesByProperties CloneAndCreateNew(this IfcRelDefinesByProperties property, IfcStore model)
+        {
+            var result = model.Instances.New<IfcRelDefinesByProperties>(rel =>
+            {
+                rel.Name = property.Name.ToString();
+                rel.RelatingPropertyDefinition = property.RelatingPropertyDefinition.CloneAndCreateNew(model);
+            });
+            return result;
+        }
+
+        private static IfcPropertySetDefinition CloneAndCreateNew(this IfcPropertySetDefinition propertySetDefinition, IfcStore model)
+        {
+            IfcPropertySetDefinition result;
+            if (propertySetDefinition is IfcPropertySet propertySet)
+            {
+                result = model.Instances.New<IfcPropertySet>(pset =>
+                {
+                    pset.Name = propertySet.Name.ToString();
+                    foreach (var item in propertySet.HasProperties)
+                    {
+                        pset.HasProperties.Add(item.CloneAndCreateNew(model));
+                    }
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+            return result;
+        }
+
+        private static IfcProperty CloneAndCreateNew(this IfcProperty property, IfcStore model)
+        {
+            IfcProperty result;
+            if (property is IfcPropertySingleValue propertySingleValue)
+            {
+                result = model.Instances.New<IfcPropertySingleValue>(p =>
+                {
+                    p.Name = propertySingleValue.Name.ToString();
+                    p.NominalValue = propertySingleValue.NominalValue.CloneAndCreateNew();
+                });
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+            return result;
+        }
+
+        private static IfcValue CloneAndCreateNew(this IfcValue value)
+        {
+            if (value is IfcText ifcText)
+            {
+                return new IfcText(ifcText.ToString());
+            }
+            else if (value is IfcLengthMeasure ifcLengthMeasure)
+            {
+                return new IfcLengthMeasure(double.Parse(ifcLengthMeasure.Value.ToString()));
+            }
+            else
+            {
+                return new IfcText(value.Value.ToString());
+            }
         }
     }
 }
