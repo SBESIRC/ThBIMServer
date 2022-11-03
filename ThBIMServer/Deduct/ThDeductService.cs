@@ -70,12 +70,12 @@ namespace ThBIMServer.Deduct
                         var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
                         filter.ForEach(o =>
                         {
-                            var crossWall = archWalls.Where(archWall => archWall.Representation.Representations[0].Items[0] is IfcSweptAreaSolid && ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
+                            var crossWall = archWalls.FirstOrDefault(archWall => ((IfcLocalPlacement)archWall.ObjectPlacement).RelativePlacement.Equals(o.Item2));
                             if (crossWall != null)
                             {
                                 // 建立墙与墙之间的打洞关系
-                                //var ifcHole = ThDeductWallRelationCreater.CreateHole(model, struWall, (double)struStorey.Elevation.Value + 100);
-                                //ThDeductWallRelationCreater.BuildRelationship(model, crossWall, struWall, ifcHole);
+                                var ifcHole = ThDeductWallRelationCreater.CreateHole(model, struWall, (double)struStorey.Elevation.Value + 100);
+                                ThDeductWallRelationCreater.BuildRelationship(model, crossWall, struWall, ifcHole);
 
                                 // 创建ClippingSolid实体
                                 //ThDeductWallClippingCreater.CreateClippingWall(model, crossWall, struWall);

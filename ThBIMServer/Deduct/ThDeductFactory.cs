@@ -23,11 +23,18 @@ namespace ThBIMServer.Deduct
             return ThIFC2x3Factory.CreateProductDefinitionShape(model, shape);
         }
 
-        public static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcWall struWall)
+        public static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcWall struWall, bool withPlacement = false)
         {
             var solid = struWall.Representation.Representations.First().Items[0];
-            var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
-            return ToIfcRepresentationItem(model, solid, placement);
+            if (!withPlacement)
+            {
+                return ToIfcRepresentationItem(model, solid);
+            }
+            else
+            {
+                var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
+                return ToIfcRepresentationItem(model, solid, placement);
+            }
         }
 
         public static IfcLocalPlacement ToIfcLocalPlacement(IfcStore model, IfcObjectPlacement relative_to, IfcLengthMeasure measure)
@@ -55,6 +62,22 @@ namespace ThBIMServer.Deduct
             else if (solid is IfcBooleanClippingResult clippingResult)
             {
                 return ToIfcBooleanClippingResult(model, clippingResult, placement);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private static IfcRepresentationItem ToIfcRepresentationItem(IfcStore model, IfcRepresentationItem solid)
+        {
+            if (solid is IfcExtrudedAreaSolid areaSolid)
+            {
+                return ToIfcExtrudedAreaSolid(model, areaSolid);
+            }
+            else if (solid is IfcBooleanClippingResult clippingResult)
+            {
+                return ToIfcBooleanClippingResult(model, clippingResult);
             }
             else
             {
@@ -94,6 +117,27 @@ namespace ThBIMServer.Deduct
             return newSolid;
         }
 
+        private static IfcExtrudedAreaSolid ToIfcExtrudedAreaSolid(IfcStore model, IfcExtrudedAreaSolid areaSolid)
+        {
+            var newSolid = model.Instances.New<IfcExtrudedAreaSolid>(s =>
+            {
+                s.Depth = areaSolid.Depth;
+                s.ExtrudedDirection = model.ToIfcDirection(new XbimVector3D(0, 0, 1));
+                s.Position = model.ToIfcAxis2Placement3D(XbimPoint3D.Zero);
+            });
+
+            if (areaSolid.SweptArea is IfcArbitraryClosedProfileDef arbitraryClosedProfile)
+            {
+                newSolid.SweptArea = ToIfcArbitraryClosedProfileDef(model, arbitraryClosedProfile);
+            }
+            else if (areaSolid.SweptArea is IfcRectangleProfileDef rectangleProfile)
+            {
+                newSolid.SweptArea = ToIfcRectangleProfileDef(model, rectangleProfile);
+            }
+
+            return newSolid;
+        }
+
         private static IfcBooleanClippingResult ToIfcBooleanClippingResult(IfcStore model, IfcBooleanClippingResult clippingResult, IfcAxis2Placement placement)
         {
             var newSolid = model.Instances.New<IfcBooleanClippingResult>(s =>
@@ -112,6 +156,33 @@ namespace ThBIMServer.Deduct
             if (clippingResult.SecondOperand is IfcHalfSpaceSolid halfSpaceSolid)
             {
                 newSolid.SecondOperand = ToIfcHalfSpaceSolid(model, halfSpaceSolid);
+            }
+
+            return newSolid;
+        }
+
+        private static IfcBooleanClippingResult ToIfcBooleanClippingResult(IfcStore model, IfcBooleanClippingResult clippingResult)
+        {
+            var newSolid = model.Instances.New<IfcBooleanClippingResult>(s =>
+            {
+                s.Operator = clippingResult.Operator;
+            });
+
+            if (clippingResult.FirstOperand is IfcExtrudedAreaSolid extrudedAreaSolid1)
+            {
+                newSolid.FirstOperand = ToIfcExtrudedAreaSolid(model, extrudedAreaSolid1);
+            }
+            else if (clippingResult.FirstOperand is IfcBooleanClippingResult result)
+            {
+                newSolid.FirstOperand = ToIfcBooleanClippingResult(model, result);
+            }
+            if (clippingResult.SecondOperand is IfcHalfSpaceSolid halfSpaceSolid)
+            {
+                newSolid.SecondOperand = ToIfcHalfSpaceSolid(model, halfSpaceSolid);
+            }
+            else if(clippingResult.SecondOperand is IfcExtrudedAreaSolid extrudedAreaSolid2)
+            {
+                newSolid.SecondOperand = ToIfcExtrudedAreaSolid(model, extrudedAreaSolid2);
             }
 
             return newSolid;
@@ -169,7 +240,7 @@ namespace ThBIMServer.Deduct
             {
                 return ToIfcCompositeCurve(model, polyline);
             }
-            else if(curve is IfcCompositeCurve compositeCurve)
+            else if (curve is IfcCompositeCurve compositeCurve)
             {
                 return ToIfcCompositeCurve(model, compositeCurve);
             }
@@ -195,10 +266,10 @@ namespace ThBIMServer.Deduct
         private static IfcCompositeCurve ToIfcCompositeCurve(IfcStore model, IfcCompositeCurve compositeCurve)
         {
             var curve = ThIFC2x3Factory.CreateIfcCompositeCurve(model);
-            foreach(var segment in compositeCurve.Segments)
+            foreach (var segment in compositeCurve.Segments)
             {
                 var curveSegement = ThIFC2x3Factory.CreateIfcCompositeCurveSegment(model);
-                if (segment.ParentCurve is IfcPolyline polyline )
+                if (segment.ParentCurve is IfcPolyline polyline)
                 {
                     if (polyline.Points.Count == 2)
                     {
