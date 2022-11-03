@@ -1,5 +1,16 @@
-﻿using Xbim.Ifc;
-using Xbim.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+using Xbim.Ifc;
+using Xbim.Ifc2x3.GeometricConstraintResource;
+using Xbim.Ifc2x3.GeometricModelResource;
+using Xbim.Ifc2x3.GeometryResource;
+using Xbim.Ifc2x3.Kernel;
+using Xbim.Ifc2x3.ProfileResource;
+using Xbim.Ifc2x3.SharedBldgElements;
+
+using ThBIMServer.NTS;
 
 namespace ThBIMServer.Deduct
 {
@@ -20,66 +31,89 @@ namespace ThBIMServer.Deduct
             // 取出建筑墙和剪力墙，获取他们的二维profile，并建立空间索引
             // 遍历剪力墙，在建筑墙的空间索引中查找被扣减的对象（具体的算法逻辑需要细化）
             // 对于需要扣减的对子（建筑墙和剪力墙)，建立开洞关系
-            //using (var iModel = IfcStore.Open(archPath))
-            //{
-            //    using (var model = IfcStore.Open(struPath))
-            //    {
-            //        var project2x3 = model.Instances.OfType<Xbim.Ifc2x3.Kernel.IfcProject>().FirstOrDefault();
-            //        if (project2x3 != null)
-            //        {
-            //            var mergeService = new ThModelMergeService();
-            //            mergeService.ModelMerge2x3(iModel, project2x3);
-            //        }
-            //        else
-            //        {
-            //            var project4 = model.Instances.OfType<Xbim.Ifc4.Kernel.IfcProject>().FirstOrDefault();
-            //            if (project4 != null)
-            //            {
-            //                var mergeService = new ThModelMergeService();
-            //                mergeService.ModelMerge4(iModel, project4);
-            //            }
-            //        }
-            //    }
-
-            //    var creater = new IfcWallRelationCreater();
-            //    creater.CreateRelation(iModel);
-
-            //    iModel.SaveAs(inserted);
-            //}
-
-            using (var iModel = IfcStore.Open(archPath))
+            using (var model = IfcStore.Open(archPath))
             {
-                var creater = new ThDeductWallRelationCreater();
-                creater.CreateRelationInSites(iModel);
+                var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
+                var struStoreys = project.Sites.First().Buildings.First().BuildingStoreys.ToList();
+                foreach (var archStorey in project.Sites.Last().Buildings.First().BuildingStoreys.ToList())
+                {
+                    var struStorey = struStoreys.FirstOrDefault(o => StoreyCompare(o.Name.Value, archStorey.Name.Value));
+                    if (struStorey == null)
+                    {
+                        continue;
+                    }
+                    var struWalls = new List<IfcWall>();
+                    foreach (var r in struStorey.ContainsElements)
+                    {
+                        struWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
+                    }
+                    var archWalls = new List<IfcWall>();
+                    foreach (var r in archStorey.ContainsElements)
+                    {
+                        archWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
+                    }
 
-                iModel.SaveAs(inserted);
+                    var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
+                    archWalls.ForEach(o =>
+                    {
+                        var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
+                        var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
+                        archProfileInfos.Add(Tuple.Create(profile, placement));
+                    });
+
+                    var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
+                    struWalls.ForEach(struWall =>
+                    {
+                        var solid = struWall.Representation.Representations[0].Items[0];
+                        var profile = GetIfcProfileDef(solid);
+                        var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
+                        var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
+                        filter.ForEach(o =>
+                        {
+                            var crossWall = archWalls.FirstOrDefault(archWall => ((IfcLocalPlacement)archWall.ObjectPlacement).RelativePlacement.Equals(o.Item2));
+                            if (crossWall != null)
+                            {
+                                // 建立墙与墙之间的打洞关系
+                                var ifcHole = ThDeductWallRelationCreater.CreateHole(model, struWall, (double)struStorey.Elevation.Value + 100);
+                                ThDeductWallRelationCreater.BuildRelationship(model, crossWall, struWall, ifcHole);
+
+                                // 创建ClippingSolid实体
+                                //ThDeductWallClippingCreater.CreateClippingWall(model, crossWall, struWall);
+                            }
+                        });
+                    });
+                }
+
+                model.SaveAs(inserted);
             }
         }
 
-        private PropertyTranformDelegate Filter()
+        private IfcProfileDef GetIfcProfileDef(IfcRepresentationItem solid)
         {
-            PropertyTranformDelegate semanticFilter = (property, parentObject) =>
+            if (solid is IfcSweptAreaSolid sweptArea)
             {
-                ////leave out geometry and placement
-                //if (parentObject is IfcProduct &&
-                //    (property.PropertyInfo.Name == nameof(IfcProduct.Representation) ||
-                //    property.PropertyInfo.Name == nameof(IfcProduct.ObjectPlacement)))
-                //    return null;
+                return sweptArea.SweptArea;
+            }
+            else if (solid is IfcBooleanClippingResult clippingResult)
+            {
+                if (clippingResult.FirstOperand is IfcSweptAreaSolid e)
+                {
+                    return e.SweptArea;
+                }
+                else
+                {
+                    return GetIfcProfileDef(clippingResult.FirstOperand as IfcRepresentationItem);
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
 
-                ////leave out mapped geometry
-                //if (parentObject is IfcTypeProduct &&
-                //     property.PropertyInfo.Name == nameof(IfcTypeProduct.RepresentationMaps))
-                //    return null;
-
-                ////only bring over IsDefinedBy and IsTypedBy inverse relationships which will take over all properties and types
-                //if (property.EntityAttribute.Order < 0 && !(
-                //    property.PropertyInfo.Name == nameof(IfcProduct.IsDefinedBy) ||
-                //    property.PropertyInfo.Name == nameof(IfcProduct.IsTypedBy)))
-                //    return null;
-
-                return property.PropertyInfo.GetValue(parentObject, null);
-            };
-            return semanticFilter;
+        private bool StoreyCompare(Xbim.Ifc4.MeasureResource.IfcLabel? str1, string str2)
+        {
+            return str1 == str2 || str1 == str2 + "F" || str1 + "F" == str2;
         }
     }
 }

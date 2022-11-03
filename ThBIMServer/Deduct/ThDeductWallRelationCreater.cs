@@ -1,151 +1,53 @@
 ﻿using System;
-using System.Linq;
-using System.Collections.Generic;
 
 using Xbim.Ifc;
-using Xbim.Ifc2x3.Kernel;
-using Xbim.Ifc2x3.ProfileResource;
-using Xbim.Ifc2x3.GeometryResource;
-using Xbim.Ifc2x3.SharedBldgElements;
-using Xbim.Ifc2x3.GeometricModelResource;
-using Xbim.Ifc2x3.GeometricConstraintResource;
-
-using ThBIMServer.NTS;
-using ThBIMServer.Ifc2x3;
+using Xbim.Ifc2x3.UtilityResource;
 using Xbim.Ifc2x3.MeasureResource;
+using Xbim.Ifc2x3.ProductExtension;
+using Xbim.Ifc2x3.SharedBldgElements;
 
 namespace ThBIMServer.Deduct
 {
-    public class ThDeductWallRelationCreater
+    public static class ThDeductWallRelationCreater
     {
-        public void CreateRelation(IfcStore model)
+        public static IfcOpeningElement CreateHole(IfcStore model, IfcWall struWall, IfcLengthMeasure measure)
         {
-            var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
-            var buildingStoreys = project.Sites.First().Buildings.First().BuildingStoreys.ToList();
-            foreach (var storey in buildingStoreys)
+            using (var txn = model.BeginTransaction("Create Hole"))
             {
-                var walls = new List<IfcWall>();
-                foreach (var r in storey.ContainsElements)
+                var ret = model.Instances.New<IfcOpeningElement>(d =>
                 {
-                    walls.AddRange(r.RelatedElements.OfType<IfcWall>());
-                }
-                var types = model.Instances.OfType<IfcRelDefinesByType>().ToList();
-                //var archType = model.Instances.Where((IfcRelDefinesByType r) => r.RelatingType == IfcWallTypeEnum.STANDARD).FirstOrDefault();
-                var struType = types.Where(r => ((IfcWallType)r.RelatingType).PredefinedType == IfcWallTypeEnum.SHEAR).FirstOrDefault();
-                if (struType == null)
-                {
-                    return;
-                }
-
-                var struWalls = walls.Where(o => struType.RelatedObjects.Contains(o)).ToList();
-                var archWalls = walls.Except(struWalls).ToList();
-                var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
-                archWalls.ForEach(o =>
-                {
-                    var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
-                    archProfileInfos.Add(Tuple.Create(profile, placement));
+                    d.Name = "Wall Deduction";
+                    d.GlobalId = IfcGloballyUniqueId.FromGuid(Guid.NewGuid());
                 });
 
-                var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
-                struWalls.ForEach(struWall =>
-                {
-                    var profile = ((IfcSweptAreaSolid)struWall.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
-                    var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
-                    filter.ForEach(o =>
-                    {
-                        var crossWall = archWalls.Where(archWall => (((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea).Equals(o.Item1)).FirstOrDefault();
-                        if (crossWall != null)
-                        {
-                            CreateRelation(model, crossWall, struWall, (double)storey.Elevation.Value);
-                        }
-                    });
-                });
+                //create representation
+                var body = ThDeductFactory.ToIfcRepresentationItem(model, struWall);
+                ret.Representation = ThDeductFactory.CreateProductDefinitionShape(model, body);
+
+                //object placement
+                ret.ObjectPlacement = ThDeductFactory.ToIfcLocalPlacement(model, struWall.ObjectPlacement, measure);
+
+                txn.Commit();
+                return ret;
             }
         }
 
-        public void CreateRelationInSites(IfcStore model)
+        public static void BuildRelationship(this IfcStore model, IfcWall archWall, IfcWall struWall, IfcOpeningElement hole)
         {
-            var project = model.Instances.OfType<IfcProject>().FirstOrDefault();
-            var struStoreys = project.Sites.First().Buildings.First().BuildingStoreys.ToList();
-            foreach (var archStorey in project.Sites.Last().Buildings.First().BuildingStoreys.ToList())
+            using (var txn = model.BeginTransaction("Create Hole Relation"))
             {
-                var struStorey = struStoreys.FirstOrDefault(o => StoreyCompare(o.Name.Value, archStorey.Name.Value));
-                if (struStorey == null)
-                {
-                    continue;
-                }
-                var struWalls = new List<IfcWall>();
-                foreach (var r in struStorey.ContainsElements)
-                {
-                    struWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
-                }
-                var archWalls = new List<IfcWall>();
-                foreach (var r in archStorey.ContainsElements)
-                {
-                    archWalls.AddRange(r.RelatedElements.OfType<IfcWall>());
-                }
+                //create relVoidsElement
+                var relVoidsElement = model.Instances.New<IfcRelVoidsElement>();
+                relVoidsElement.RelatedOpeningElement = hole;
+                relVoidsElement.RelatingBuildingElement = archWall;
 
-                var archProfileInfos = new List<Tuple<IfcProfileDef, IfcAxis2Placement>>();
-                archWalls.ForEach(o =>
-                {
-                    var profile = ((IfcSweptAreaSolid)o.Representation.Representations[0].Items[0]).SweptArea;
-                    var placement = ((IfcLocalPlacement)o.ObjectPlacement).RelativePlacement;
-                    archProfileInfos.Add(Tuple.Create(profile, placement));
-                });
+                //create relFillsElement
+                var relFillsElement = model.Instances.New<IfcRelFillsElement>();
+                relFillsElement.RelatingOpeningElement = hole;
+                relFillsElement.RelatedBuildingElement = struWall;
 
-                var spatialIndex = new ThIFCNTSSpatialIndex(archProfileInfos);
-                struWalls.ForEach(struWall =>
-                {
-                    var solid = struWall.Representation.Representations[0].Items[0];
-                    var profile = GetIfcProfileDef(solid);
-                    var placement = ((IfcLocalPlacement)struWall.ObjectPlacement).RelativePlacement;
-                    var filter = spatialIndex.SelectCrossingPolygon(Tuple.Create(profile, placement));
-                    filter.ForEach(o =>
-                    {
-                        var crossWall = archWalls.Where(archWall => ((IfcSweptAreaSolid)archWall.Representation.Representations[0].Items[0]).SweptArea.Equals(o.Item1)).FirstOrDefault();
-                        if (crossWall != null)
-                        {
-                            CreateRelation(model, crossWall, struWall, (double)struStorey.Elevation.Value + 100);
-                        }
-                    });
-                });
+                txn.Commit();
             }
-        }
-
-        private IfcProfileDef GetIfcProfileDef(IfcRepresentationItem solid)
-        {
-            if (solid is IfcSweptAreaSolid sweptArea)
-            {
-                return sweptArea.SweptArea;
-            }
-            else if (solid is IfcBooleanClippingResult clippingResult)
-            {
-                if (clippingResult.FirstOperand is IfcSweptAreaSolid e)
-                {
-                    return e.SweptArea;
-                }
-                else
-                {
-                    return GetIfcProfileDef(clippingResult.FirstOperand as IfcRepresentationItem);
-                }
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        private void CreateRelation(IfcStore model, IfcWall archWall, IfcWall struWall, IfcLengthMeasure measure)
-        {
-            var ifcHole = ThDeductWallHoleCreater.CreateHole(model, struWall, measure);
-            ThDeductWallHoleCreater.BuildRelationship(model, archWall, struWall, ifcHole);
-        }
-
-        private bool StoreyCompare(Xbim.Ifc4.MeasureResource.IfcLabel? str1, string str2)
-        {
-            return str1 == str2 || str1 == str2 + "F" || str1 + "F" == str2;
         }
     }
 }

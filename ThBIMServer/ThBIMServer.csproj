@@ -78,7 +78,8 @@
     <Compile Include="Data\ThTCHSlabData.cs" />
     <Compile Include="Data\ThTCHWallData.cs" />
     <Compile Include="Data\ThTCHWindowData.cs" />
-    <Compile Include="Deduct\ThDeductWallHoleCreater.cs" />
+    <Compile Include="Deduct\ThDeductFactory.cs" />
+    <Compile Include="Deduct\ThDeductWallClippingCreater.cs" />
     <Compile Include="Deduct\ThDeductWallRelationCreater.cs" />
     <Compile Include="NTS\ThIFCNTSFixedPrecision.cs" />
     <Compile Include="NTS\ThNTSOperation.cs" />
